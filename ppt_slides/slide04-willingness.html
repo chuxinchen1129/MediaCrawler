@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>核心发现：消费者意愿分析</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 720pt;
+            height: 405pt;
+            font-family: Arial, Helvetica, sans-serif;
+            background: white;
+            overflow: hidden;
+        }
+
+        .header {
+            background: #277884;
+            height: 60pt;
+            display: flex;
+            align-items: center;
+            padding-left: 40pt;
+        }
+
+        .header h1 {
+            font-size: 28pt;
+            font-weight: bold;
+            color: white;
+        }
+
+        .content {
+            display: flex;
+            padding: 25pt 40pt 35pt 40pt;
+        }
+
+        .left-column {
+            flex: 1;
+            padding-right: 20pt;
+        }
+
+        .right-column {
+            flex: 1;
+            padding-left: 20pt;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .chart-placeholder {
+            width: 100%;
+            height: 220pt;
+            background: #F4F6F6;
+            border: 2pt dashed #5EA8A7;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8pt;
+        }
+
+        .chart-placeholder p {
+            color: #5EA8A7;
+            font-size: 14pt;
+        }
+
+        .insight-box {
+            background: #F4F6F6;
+            padding: 15pt;
+            border-radius: 6pt;
+            margin-top: 15pt;
+        }
+
+        .insight-title {
+            font-size: 16pt;
+            font-weight: bold;
+            color: #277884;
+            margin-bottom: 10pt;
+        }
+
+        .insight-text {
+            font-size: 13pt;
+            color: #2C2C2C;
+            line-height: 1.5;
+        }
+
+        .stat-highlight {
+            font-size: 36pt;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 6pt;
+        }
+
+        .willing { color: #5EA8A7; }
+        .unwilling { color: #FE4447; }
+
+        .stat-label {
+            font-size: 13pt;
+            color: #666;
+            text-align: center;
+            margin-bottom: 12pt;
+        }
+
+        .insight-box {
+            background: #F4F6F6;
+            padding: 12pt;
+            border-radius: 6pt;
+            margin-top: 10pt;
+        }
+
+        .insight-title {
+            font-size: 14pt;
+            font-weight: bold;
+            color: #277884;
+            margin-bottom: 8pt;
+        }
+
+        .insight-text {
+            font-size: 12pt;
+            color: #2C2C2C;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>核心发现：消费者意愿分析</h1>
+    </div>
+    <div class="content">
+        <div class="left-column">
+            <div class="chart-placeholder">
+                <p>[饼图：消费者意愿分布]</p>
+            </div>
+        </div>
+        <div class="right-column">
+            <p class="stat-highlight willing">78.6%</p>
+            <p class="stat-label">愿意尝试无醇啤酒</p>
+
+            <p class="stat-highlight unwilling">21.4%</p>
+            <p class="stat-label">不愿意尝试</p>
+
+            <div class="insight-box">
+                <p class="insight-title">关键洞察</p>
+                <p class="insight-text">大部分消费者持开放态度，市场基础良好。提升产品体验是转化观望者的关键。</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

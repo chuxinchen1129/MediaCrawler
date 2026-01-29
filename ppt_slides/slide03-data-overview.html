@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据概览</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 720pt;
+            height: 405pt;
+            font-family: Arial, Helvetica, sans-serif;
+            background: white;
+            overflow: hidden;
+        }
+
+        .header {
+            background: #277884;
+            height: 60pt;
+            display: flex;
+            align-items: center;
+            padding-left: 40pt;
+        }
+
+        .header h1 {
+            font-size: 28pt;
+            font-weight: bold;
+            color: white;
+        }
+
+        .content {
+            display: flex;
+            padding: 25pt 40pt 35pt 40pt;
+        }
+
+        .left-column {
+            flex: 1;
+            padding-right: 20pt;
+        }
+
+        .right-column {
+            flex: 1;
+            padding-left: 20pt;
+        }
+
+        .section-title {
+            font-size: 16pt;
+            font-weight: bold;
+            color: #277884;
+            margin-bottom: 12pt;
+        }
+
+        .data-item {
+            margin-bottom: 10pt;
+            padding-left: 10pt;
+            border-left: 4pt solid #5EA8A7;
+        }
+
+        .data-label {
+            font-size: 11pt;
+            color: #666;
+            margin-bottom: 2pt;
+        }
+
+        .data-value {
+            font-size: 18pt;
+            font-weight: bold;
+            color: #2C2C2C;
+        }
+
+        .highlight {
+            color: #FE4447;
+        }
+
+        .analysis-scope {
+            background: #F4F6F6;
+            padding: 12pt;
+            border-radius: 6pt;
+        }
+
+        .scope-item {
+            font-size: 12pt;
+            color: #2C2C2C;
+            margin-bottom: 6pt;
+            line-height: 1.3;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>数据概览：分析基础</h1>
+    </div>
+    <div class="content">
+        <div class="left-column">
+            <h2 class="section-title">数据来源</h2>
+            <div class="data-item">
+                <p class="data-label">平台</p>
+                <p class="data-value">小红书</p>
+            </div>
+            <div class="data-item">
+                <p class="data-label">搜索关键词</p>
+                <p class="data-value">"无醇啤酒"</p>
+            </div>
+            <div class="data-item">
+                <p class="data-label">采集时间</p>
+                <p class="data-value">2026-01-26</p>
+            </div>
+            <div class="data-item">
+                <p class="data-label">时间跨度</p>
+                <p class="data-value highlight">约3.8年</p>
+            </div>
+        </div>
+        <div class="right-column">
+            <h2 class="section-title">样本规模</h2>
+            <div class="data-item">
+                <p class="data-label">笔记数量</p>
+                <p class="data-value highlight">100条</p>
+            </div>
+            <div class="data-item">
+                <p class="data-label">评论数量</p>
+                <p class="data-value highlight">2,011条</p>
+            </div>
+            <div class="data-item">
+                <p class="data-label">有效分析样本</p>
+                <p class="data-value">1,997条</p>
+            </div>
+            <div class="analysis-scope">
+                <p class="scope-item">笔记平均点赞：733.8</p>
+                <p class="scope-item">笔记平均收藏：250.4</p>
+                <p class="scope-item">评论平均点赞：8.6</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

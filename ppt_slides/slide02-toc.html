@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>目录</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 720pt;
+            height: 405pt;
+            font-family: Arial, Helvetica, sans-serif;
+            background: white;
+            overflow: hidden;
+        }
+
+        .header {
+            background: #277884;
+            height: 60pt;
+            display: flex;
+            align-items: center;
+            padding-left: 40pt;
+        }
+
+        .header h1 {
+            font-size: 28pt;
+            font-weight: bold;
+            color: white;
+        }
+
+        .content {
+            padding: 20pt 60pt 35pt 60pt;
+        }
+
+        .toc-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8pt;
+        }
+
+        .toc-number {
+            width: 32pt;
+            height: 32pt;
+            background-color: #FE4447;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15pt;
+        }
+
+        .toc-number p {
+            color: white;
+            font-size: 14pt;
+            font-weight: bold;
+        }
+
+        .toc-text {
+            font-size: 15pt;
+            color: #2C2C2C;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>目录</h1>
+    </div>
+    <div class="content">
+        <div class="toc-item">
+            <div class="toc-number"><p>01</p></div>
+            <p class="toc-text">数据概览</p>
+        </div>
+        <div class="toc-item">
+            <div class="toc-number"><p>02</p></div>
+            <p class="toc-text">核心发现：消费者意愿分析</p>
+        </div>
+        <div class="toc-item">
+            <div class="toc-number"><p>03</p></div>
+            <p class="toc-text">愿意尝试的原因TOP5</p>
+        </div>
+        <div class="toc-item">
+            <div class="toc-number"><p>04</p></div>
+            <p class="toc-text">不愿意尝试的原因TOP3</p>
+        </div>
+        <div class="toc-item">
+            <div class="toc-number"><p>05</p></div>
+            <p class="toc-text">场景适配性分析</p>
+        </div>
+        <div class="toc-item">
+            <div class="toc-number"><p>06</p></div>
+            <p class="toc-text">用户画像：四大用户类型</p>
+        </div>
+        <div class="toc-item">
+            <div class="toc-number"><p>07</p></div>
+            <p class="toc-text">关键洞察与建议</p>
+        </div>
+    </div>
+</body>
+</html>

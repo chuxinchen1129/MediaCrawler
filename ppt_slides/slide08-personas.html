@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户画像：四大用户类型</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 720pt;
+            height: 405pt;
+            font-family: Arial, Helvetica, sans-serif;
+            background: white;
+            overflow: hidden;
+        }
+
+        .header {
+            background: #277884;
+            height: 60pt;
+            display: flex;
+            align-items: center;
+            padding-left: 40pt;
+        }
+
+        .header h1 {
+            font-size: 28pt;
+            font-weight: bold;
+            color: white;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10pt;
+            padding: 22pt 35pt 40pt 35pt;
+        }
+
+        .persona-card {
+            background: #F4F6F6;
+            border-radius: 6pt;
+            padding: 12pt;
+            border-top: 4pt solid #5EA8A7;
+        }
+
+        .persona-title {
+            font-size: 15pt;
+            font-weight: bold;
+            color: #277884;
+            margin-bottom: 6pt;
+        }
+
+        .persona-tag {
+            display: inline-block;
+            background-color: #5EA8A7;
+            border-radius: 4pt;
+            font-size: 10pt;
+            margin-bottom: 8pt;
+        }
+
+        .persona-tag p {
+            color: white;
+            padding: 2pt 6pt;
+        }
+
+        .persona-desc {
+            font-size: 11pt;
+            color: #2C2C2C;
+            line-height: 1.3;
+            margin-bottom: 6pt;
+        }
+
+        .persona-needs {
+            font-size: 10pt;
+            color: #666;
+        }
+
+        .persona-needs strong {
+            color: #FE4447;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>用户画像：四大用户类型</h1>
+    </div>
+    <div class="content">
+        <div class="persona-card">
+            <h2 class="persona-title">社交型用户</h2>
+            <div class="persona-tag"><p>占比约24%</p></div>
+            <p class="persona-desc">注重社交氛围，希望在聚会、聚餐等场景中保持参与感，同时避免酒精影响。</p>
+            <p class="persona-needs"><strong>核心需求：</strong>不破坏氛围、社交融入、安全饮酒</p>
+        </div>
+
+        <div class="persona-card">
+            <h2 class="persona-title">实用型用户</h2>
+            <div class="persona-tag"><p>占比约28%</p></div>
+            <p class="persona-desc">开车人士、孕妇等需要避免酒精的特殊群体，追求功能性解决方案。</p>
+            <p class="persona-needs"><strong>核心需求：</strong>0酒精保证、安全性、口感可接受</p>
+        </div>
+
+        <div class="persona-card">
+            <h2 class="persona-title">健康型用户</h2>
+            <div class="persona-tag"><p>占比约22%</p></div>
+            <p class="persona-desc">健身、减肥等健康意识强的用户，关注热量摄入和身体健康。</p>
+            <p class="persona-needs"><strong>核心需求：</strong>低热量、健康属性、无负担享受</p>
+        </div>
+
+        <div class="persona-card">
+            <h2 class="persona-title">体验型用户</h2>
+            <div class="persona-tag"><p>占比约26%</p></div>
+            <p class="persona-desc">好奇尝鲜群体，愿意尝试新产品，对口感和体验有较高期待。</p>
+            <p class="persona-needs"><strong>核心需求：</strong>口感好、新颖体验、性价比合理</p>
+        </div>
+    </div>
+</body>
+</html>
