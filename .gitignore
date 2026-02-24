@@ -179,3 +179,30 @@ agent_zone
 debug_tools
 
 database/*.db
+
+# Backup files
+*.bak
+*.backup*
+*.backup_*
+
+# Config backups
+config/*.bak
+config/*.backup*
+
+# Log files
+*.log
+/tmp/*.log
+logs/
+
+# Feishu config (sensitive)
+feishu/config.json
+.feishu_user_config.json
+
+# Scheduler temp files
+/tmp/baogaomiao_scheduler/
+/tmp/eastmoney_scheduler/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
