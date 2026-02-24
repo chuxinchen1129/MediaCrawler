@@ -26,93 +26,115 @@ CRAWLER_TYPE = "detail"  # search(搜索) | detail(帖子详情) | creator(创�
 # 是否开启 IP 代理
 ENABLE_IP_PROXY = False
 
-# 代理IP池数量
+# Number of proxy IP pools
 IP_PROXY_POOL_COUNT = 2
 
-# 代理IP提供商名称
+# Proxy IP provider name
 IP_PROXY_PROVIDER_NAME = "kuaidaili"  # kuaidaili | wandouhttp
 
-# 设置为True不会打开浏览器（无头浏览器）
-# 设置False会打开一个浏览器
-# 小红书如果一直扫码登录不通过，打开浏览器手动过一下滑动验证码
-# 抖音如果一直提示失败，打开浏览器看下是否扫码登录之后出现了手机号验证，如果出现了手动过一下再试。
+# Setting to True will not open the browser (headless browser)
+# Setting False will open a browser
+# If Xiaohongshu keeps scanning the code to log in but fails, open the browser and manually pass the sliding verification code.
+# If Douyin keeps prompting failure, open the browser and see if mobile phone number verification appears after scanning the QR code to log in. If it does, manually go through it and try again.
 HEADLESS = False
 
-# 是否保存登录状态
+# Whether to save login status
 SAVE_LOGIN_STATE = True
 
-# ==================== CDP (Chrome DevTools Protocol) 配置 ====================
-# 是否启用CDP模式 - 使用用户现有的Chrome/Edge浏览器进行爬取，提供更好的反检测能力
-# 启用后将自动检测并启动用户的Chrome/Edge浏览器，通过CDP协议进行控制
-# 这种方式使用真实的浏览器环境，包括用户的扩展、Cookie和设置，大大降低被检测的风险
+# ==================== CDP (Chrome DevTools Protocol) Configuration ====================
+# Whether to enable CDP mode - use the user's existing Chrome/Edge browser to crawl, providing better anti-detection capabilities
+# Once enabled, the user's Chrome/Edge browser will be automatically detected and started, and controlled through the CDP protocol.
+# This method uses the real browser environment, including the user's extensions, cookies and settings, greatly reducing the risk of detection.
 ENABLE_CDP_MODE = True
 
-# CDP调试端口，用于与浏览器通信
-# 如果端口被占用，系统会自动尝试下一个可用端口
+# CDP debug port, used to communicate with the browser
+# If the port is occupied, the system will automatically try the next available port
 CDP_DEBUG_PORT = 9222
 
-# 自定义浏览器路径（可选）
-# 如果为空，系统会自动检测Chrome/Edge的安装路径
-# Windows示例: "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
-# macOS示例: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+# Custom browser path (optional)
+# If it is empty, the system will automatically detect the installation path of Chrome/Edge
+# Windows example: "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
+# macOS example: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 CUSTOM_BROWSER_PATH = ""
 
-# CDP模式下是否启用无头模式
-# 注意：即使设置为True，某些反检测功能在无头模式下可能效果不佳
+# Whether to enable headless mode in CDP mode
+# NOTE: Even if set to True, some anti-detection features may not work well in headless mode
 CDP_HEADLESS = False
 
+<<<<<<< HEAD
 # 浏览器启动超时时间（秒）
 BROWSER_LAUNCH_TIMEOUT = 120
 
 # 是否在程序结束时自动关闭浏览器
 # 设置为False可以保持浏览器运行，便于调试
 AUTO_CLOSE_BROWSER = False
+=======
+# Browser startup timeout (seconds)
+BROWSER_LAUNCH_TIMEOUT = 60
 
-# 数据保存类型选项配置,支持六种类型：csv、db、json、sqlite、excel、postgres, 最好保存到DB，有排重的功能。
+# Whether to automatically close the browser when the program ends
+# Set to False to keep the browser running for easy debugging
+AUTO_CLOSE_BROWSER = True
+>>>>>>> 13b6140f228c13531ad71effd8d2dc13cf45a1ab
+
+# Data saving type option configuration, supports six types: csv, db, json, sqlite, excel, postgres. It is best to save to DB, with deduplication function.
 SAVE_DATA_OPTION = "json"  # csv or db or json or sqlite or excel or postgres
 
-# 用户浏览器缓存的浏览器文件配置
+# Data saving path, if not specified by default, it will be saved to the data folder.
+SAVE_DATA_PATH = ""
+
+# Browser file configuration cached by the user's browser
 USER_DATA_DIR = "%s_user_data_dir"  # %s will be replaced by platform name
 
-# 爬取开始页数 默认从第一页开始
+# The number of pages to start crawling starts from the first page by default
 START_PAGE = 1
 
+<<<<<<< HEAD
 # 爬取视频/帖子的数量控制
 CRAWLER_MAX_NOTES_COUNT = 20
+=======
+# Control the number of crawled videos/posts
+CRAWLER_MAX_NOTES_COUNT = 15
+>>>>>>> 13b6140f228c13531ad71effd8d2dc13cf45a1ab
 
-# 并发爬虫数量控制
+# Controlling the number of concurrent crawlers
 MAX_CONCURRENCY_NUM = 1
 
+<<<<<<< HEAD
 # 是否开启爬媒体模式（包含图片或视频资源），默认不开启爬媒体
 ENABLE_GET_MEIDAS = True
+=======
+# Whether to enable crawling media mode (including image or video resources), crawling media is not enabled by default
+ENABLE_GET_MEIDAS = False
+>>>>>>> 13b6140f228c13531ad71effd8d2dc13cf45a1ab
 
-# 是否开启爬评论模式, 默认开启爬评论
+# Whether to enable comment crawling mode. Comment crawling is enabled by default.
 ENABLE_GET_COMMENTS = True
 
-# 爬取一级评论的数量控制(单视频/帖子)
+# Control the number of crawled first-level comments (single video/post)
 CRAWLER_MAX_COMMENTS_COUNT_SINGLENOTES = 10
 
-# 是否开启爬二级评论模式, 默认不开启爬二级评论
-# 老版本项目使用了 db, 则需参考 schema/tables.sql line 287 增加表字段
+# Whether to enable the mode of crawling second-level comments. By default, crawling of second-level comments is not enabled.
+# If the old version of the project uses db, you need to refer to schema/tables.sql line 287 to add table fields.
 ENABLE_GET_SUB_COMMENTS = False
 
-# 词云相关
-# 是否开启生成评论词云图
+# word cloud related
+# Whether to enable generating comment word clouds
 ENABLE_GET_WORDCLOUD = False
-# 自定义词语及其分组
-# 添加规则：xx:yy 其中xx为自定义添加的词组，yy为将xx该词组分到的组名。
+# Custom words and their groups
+# Add rule: xx:yy where xx is a custom-added phrase, and yy is the group name to which the phrase xx is assigned.
 CUSTOM_WORDS = {
-    "零几": "年份",  # 将“零几”识别为一个整体
-    "高频词": "专业术语",  # 示例自定义词
+    "零几": "年份",  # Recognize "zero points" as a whole
+    "高频词": "专业术语",  # Example custom words
 }
 
-# 停用(禁用)词文件路径
+# Deactivate (disabled) word file path
 STOP_WORDS_FILE = "./docs/hit_stopwords.txt"
 
-# 中文字体文件路径
+# Chinese font file path
 FONT_PATH = "./docs/STZHONGS.TTF"
 
-# 爬取间隔时间
+# Crawl interval
 CRAWLER_MAX_SLEEP_SEC = 2
 
 from .bilibili_config import *
