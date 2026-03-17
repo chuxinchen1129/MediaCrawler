@@ -37,6 +37,7 @@ class WeibostoreFactory:
         "db": WeiboDbStoreImplement,
         "postgres": WeiboDbStoreImplement,
         "json": WeiboJsonStoreImplement,
+        "jsonl": WeiboJsonlStoreImplement,
         "sqlite": WeiboSqliteStoreImplement,
         "mongodb": WeiboMongoStoreImplement,
         "excel": WeiboExcelStoreImplement,
@@ -83,7 +84,7 @@ async def update_weibo_note(note_item: Dict):
     content_text = mblog.get("text")
     clean_text = re.sub(r"<.*?>", "", content_text)
     save_content_item = {
-        # 微博信息
+        # Weibo information
         "note_id": note_id,
         "content": clean_text,
         "create_time": utils.rfc2822_to_timestamp(mblog.get("created_at")),
@@ -95,7 +96,7 @@ async def update_weibo_note(note_item: Dict):
         "note_url": f"https://m.weibo.cn/detail/{note_id}",
         "ip_location": mblog.get("region_name", "").replace("发布于 ", ""),
 
-        # 用户信息
+        # User information
         "user_id": str(user_info.get("id")),
         "nickname": user_info.get("screen_name", ""),
         "gender": user_info.get("gender", ""),
@@ -151,7 +152,7 @@ async def update_weibo_note_comment(note_id: str, comment_item: Dict):
         "ip_location": comment_item.get("source", "").replace("来自", ""),
         "parent_comment_id": comment_item.get("rootid", ""),
 
-        # 用户信息
+        # User information
         "user_id": str(user_info.get("id")),
         "nickname": user_info.get("screen_name", ""),
         "gender": user_info.get("gender", ""),

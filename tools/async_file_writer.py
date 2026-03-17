@@ -35,7 +35,10 @@ class AsyncFileWriter:
         self.wordcloud_generator = AsyncWordCloudGenerator() if config.ENABLE_GET_WORDCLOUD else None
 
     def _get_file_path(self, file_type: str, item_type: str) -> str:
-        base_path = f"data/{self.platform}/{file_type}"
+        if config.SAVE_DATA_PATH:
+            base_path = f"{config.SAVE_DATA_PATH}/{self.platform}/{file_type}"
+        else:
+            base_path = f"data/{self.platform}/{file_type}"
         pathlib.Path(base_path).mkdir(parents=True, exist_ok=True)
         file_name = f"{self.crawler_type}_{item_type}_{utils.get_current_date()}.{file_type}"
         return f"{base_path}/{file_name}"
@@ -49,6 +52,12 @@ class AsyncFileWriter:
                 if not file_exists or await f.tell() == 0:
                     await writer.writeheader()
                 await writer.writerow(item)
+
+    async def write_to_jsonl(self, item: Dict, item_type: str):
+        file_path = self._get_file_path('jsonl', item_type)
+        async with self.lock:
+            async with aiofiles.open(file_path, 'a', encoding='utf-8') as f:
+                await f.write(json.dumps(item, ensure_ascii=False) + '\n')
 
     async def write_single_item_to_json(self, item: Dict, item_type: str):
         file_path = self._get_file_path('json', item_type)
@@ -82,21 +91,31 @@ class AsyncFileWriter:
             return
 
         try:
-            # Read comments from JSON file
-            comments_file_path = self._get_file_path('json', 'comments')
-            if not os.path.exists(comments_file_path) or os.path.getsize(comments_file_path) == 0:
-                utils.logger.info(f"[AsyncFileWriter.generate_wordcloud_from_comments] No comments file found at {comments_file_path}")
+            # Read comments from JSON or JSONL file
+            comments_data = []
+            jsonl_file_path = self._get_file_path('jsonl', 'comments')
+            json_file_path = self._get_file_path('json', 'comments')
+
+            if os.path.exists(jsonl_file_path) and os.path.getsize(jsonl_file_path) > 0:
+                async with aiofiles.open(jsonl_file_path, 'r', encoding='utf-8') as f:
+                    async for line in f:
+                        line = line.strip()
+                        if line:
+                            try:
+                                comments_data.append(json.loads(line))
+                            except json.JSONDecodeError:
+                                continue
+            elif os.path.exists(json_file_path) and os.path.getsize(json_file_path) > 0:
+                async with aiofiles.open(json_file_path, 'r', encoding='utf-8') as f:
+                    content = await f.read()
+                    if content:
+                        comments_data = json.loads(content)
+                        if not isinstance(comments_data, list):
+                            comments_data = [comments_data]
+
+            if not comments_data:
+                utils.logger.info(f"[AsyncFileWriter.generate_wordcloud_from_comments] No comments data found")
                 return
-
-            async with aiofiles.open(comments_file_path, 'r', encoding='utf-8') as f:
-                content = await f.read()
-                if not content:
-                    utils.logger.info(f"[AsyncFileWriter.generate_wordcloud_from_comments] Comments file is empty")
-                    return
-
-                comments_data = json.loads(content)
-                if not isinstance(comments_data, list):
-                    comments_data = [comments_data]
 
             # Filter comments data to only include 'content' field
             # Handle different comment data structures across platforms
@@ -113,7 +132,10 @@ class AsyncFileWriter:
                 return
 
             # Generate wordcloud
-            words_base_path = f"data/{self.platform}/words"
+            if config.SAVE_DATA_PATH:
+                words_base_path = f"{config.SAVE_DATA_PATH}/{self.platform}/words"
+            else:
+                words_base_path = f"data/{self.platform}/words"
             pathlib.Path(words_base_path).mkdir(parents=True, exist_ok=True)
             words_file_prefix = f"{words_base_path}/{self.crawler_type}_comments_{utils.get_current_date()}"
 

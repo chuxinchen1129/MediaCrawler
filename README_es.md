@@ -1,17 +1,3 @@
-<div align="center" markdown="1">
-   <sup>Special thanks to:</sup>
-   <br>
-   <br>
-   <a href="https://go.warp.dev/MediaCrawler">
-      <img alt="Warp sponsorship" width="400" src="https://github.com/warpdotdev/brand-assets/blob/main/Github/Sponsor/Warp-Github-LG-02.png?raw=true">
-   </a>
-
-### [Warp is built for coding with multiple AI agents](https://go.warp.dev/MediaCrawler)
-
-
-</div>
-<hr>
-
 # 🔥 MediaCrawler - Rastreador de Plataformas de Redes Sociales 🕷️
 
 <div align="center">
@@ -61,16 +47,14 @@ Una poderosa **herramienta de recolección de datos de redes sociales multiplata
 | Zhihu   | ✅          | ✅              | ✅        | ✅              | ✅          | ✅        | ✅              |
 
 
-<details id="pro-version">
-<summary>🔗 <strong>🚀 ¡Lanzamiento Mayor de MediaCrawlerPro! ¡Más características, mejor diseño arquitectónico!</strong></summary>
-
-### 🚀 ¡Lanzamiento Mayor de MediaCrawlerPro!
+<strong>¡Lanzamiento Mayor de MediaCrawlerPro! ¡El código abierto no es fácil, bienvenido a suscribirse y apoyar!</strong>
 
 > Enfócate en aprender el diseño arquitectónico de proyectos maduros, no solo tecnología de rastreo. ¡La filosofía de diseño de código de la versión Pro también vale la pena estudiar en profundidad!
 
 [MediaCrawlerPro](https://github.com/MediaCrawlerPro) ventajas principales sobre la versión de código abierto:
 
 #### 🎯 Actualizaciones de Características Principales
+- ✅ **Agente de Deconstrucción de Contenido** (Nueva función)
 - ✅ **Funcionalidad de reanudación de rastreo** (Característica clave)
 - ✅ **Soporte de múltiples cuentas + pool de proxy IP** (Característica clave)
 - ✅ **Eliminar dependencia de Playwright**, más fácil de usar
@@ -84,10 +68,9 @@ Una poderosa **herramienta de recolección de datos de redes sociales multiplata
 #### 🎁 Características Adicionales
 - ✅ **Aplicación de escritorio descargadora de videos de redes sociales** (adecuada para aprender desarrollo full-stack)
 - ✅ **Recomendaciones de feed de página de inicio multiplataforma** (HomeFeed)
-- [ ] **Agente AI basado en plataformas de redes sociales está en desarrollo 🚀🚀**
+- [ ] **Agente AI basado en análisis de comentarios está en desarrollo 🚀🚀**
 
 Haga clic para ver: [Página de Inicio del Proyecto MediaCrawlerPro](https://github.com/MediaCrawlerPro) para más información
-</details>
 
 ## 🚀 Inicio Rápido
 
@@ -238,7 +221,7 @@ python main.py --help
 
 ## 💾 Almacenamiento de Datos
 
-MediaCrawler soporta múltiples métodos de almacenamiento de datos, incluyendo CSV, JSON, Excel, SQLite y bases de datos MySQL.
+MediaCrawler soporta múltiples métodos de almacenamiento de datos, incluyendo CSV, JSON, JSONL, Excel, SQLite y bases de datos MySQL.
 
 📖 **Para instrucciones de uso detalladas, por favor vea: [Guía de Almacenamiento de Datos](docs/data_storage_guide.md)**
 
@@ -252,14 +235,6 @@ MediaCrawler soporta múltiples métodos de almacenamiento de datos, incluyendo 
 
 
 ### 💰 Exhibición de Patrocinadores
-
-<a href="https://h.wandouip.com">
-<img src="docs/static/images/img_8.jpg">
-<br>
-WandouHTTP - Pool de recursos IP auto-operado de decenas de millones, pureza de IP ≥99.8%, actualizaciones de IP de alta frecuencia diarias, respuesta rápida, conexión estable, soporta múltiples escenarios de negocio, personalizable según demanda, regístrese para obtener 10000 IPs gratis.
-</a>
-
----
 
 <a href="https://tikhub.io/?utm_source=github.com/NanmiCoder/MediaCrawler&utm_medium=marketing_social&utm_campaign=retargeting&utm_content=carousel_ad">
 <img width="500" src="docs/static/images/tikhub_banner_zh.png">
