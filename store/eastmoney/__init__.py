@@ -70,17 +70,19 @@ async def update_eastmoney_report_pdf_status(infocode: str, status: str, pdf_pat
     await EastmoneyStoreFactory.create_store().update_pdf_status(infocode, status, pdf_path, error_message)
 
 
-async def save_pdf_file(infocode: str, pdf_content: bytes, extension_file_name: str) -> str:
+async def save_pdf_file(infocode: str, pdf_content: bytes, extension_file_name: str, report_title: str = "", org_name: str = "") -> str:
     """
     Save PDF file
     Args:
         infocode: report infocode
         pdf_content: PDF bytes content
         extension_file_name: file extension name
+        report_title: report title for naming
+        org_name: organization name for naming
     Returns:
         file path of saved PDF
     """
-    return await EastmoneyPdfStorage().store_pdf({"infocode": infocode, "pdf_content": pdf_content, "extension_file_name": extension_file_name})
+    return await EastmoneyPdfStorage().store_pdf({"infocode": infocode, "pdf_content": pdf_content, "extension_file_name": extension_file_name, "report_title": report_title, "org_name": org_name})
 
 
 async def get_new_reports_for_feishu(days: int = None) -> List[dict]:

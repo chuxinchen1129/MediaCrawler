@@ -243,7 +243,9 @@ class EastmoneyCrawler:
                 pdf_path = await save_pdf_file(
                     infocode=info_code,
                     pdf_content=pdf_content,
-                    extension_file_name=".pdf"
+                    extension_file_name=".pdf",
+                    report_title=db_item.get("report_title", ""),
+                    org_name=db_item.get("org_name", ""),
                 )
 
                 db_item["pdf_path"] = pdf_path
