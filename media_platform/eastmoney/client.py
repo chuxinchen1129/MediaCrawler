@@ -199,44 +199,38 @@ class EastmoneyClient:
 
         utils.logger.info(f"[EastmoneyClient] Downloading PDF: {infocode} from {pdf_url}")
 
+        # 使用curl子进程下载PDF，绕过东方财富的JS防护/TLS指纹检测
         try:
-            async with httpx.AsyncClient(
-                timeout=eastmoney_config.PDF_DOWNLOAD_TIMEOUT
-            ) as client:
-                # 先发送HEAD请求检查文件是否存在
-                try:
-                    head_response = await client.head(pdf_url)
-                    head_response.raise_for_status()
-                    content_length = head_response.headers.get("content-length", "0")
-                    utils.logger.debug(f"[EastmoneyClient] PDF size: {content_length} bytes")
-                except httpx.HTTPStatusError:
-                    # HEAD请求失败，直接尝试GET
-                    pass
+            proc = await asyncio.create_subprocess_exec(
+                "curl", "-sL",
+                "-H", "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+                "-H", "Referer: https://data.eastmoney.com/",
+                "-o", "-",
+                pdf_url,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=eastmoney_config.PDF_DOWNLOAD_TIMEOUT)
 
-                # 下载PDF
-                response = await client.get(pdf_url)
-                response.raise_for_status()
+            if proc.returncode != 0:
+                raise PDFDownloadError(f"curl下载失败: {stderr.decode()}")
 
-                # 检查是否为有效的PDF
-                content_type = response.headers.get("content-type", "")
-                if "application/pdf" not in content_type and "pdf" not in content_type.lower():
-                    utils.logger.warning(
-                        f"[EastmoneyClient] 响应可能不是PDF: {content_type}"
-                    )
+            # 检查是否为有效的PDF
+            if not stdout[:5].startswith(b"%PDF"):
+                utils.logger.warning(
+                    f"[EastmoneyClient] 响应不是有效PDF，前20字节: {stdout[:20]}"
+                )
 
-                utils.logger.info(f"[EastmoneyClient] PDF downloaded: {len(response.content)} bytes")
+            utils.logger.info(f"[EastmoneyClient] PDF downloaded: {len(stdout)} bytes")
 
-                return response.content
+            return stdout
 
-        except httpx.HTTPStatusError as e:
-            if e.response.status_code == 404:
-                utils.logger.error(f"[EastmoneyClient] PDF不存在: {infocode}")
-                return None
-            raise PDFDownloadError(f"HTTP状态错误: {e.response.status_code}")
-        except httpx.RequestError as e:
-            raise PDFDownloadError(f"请求错误: {e}")
-        except httpx.TimeoutException as e:
-            raise PDFDownloadError(f"下载超时: {e}")
+        except asyncio.TimeoutError:
+            raise PDFDownloadError(f"下载超时")
+        except Exception as e:
+            if isinstance(e, PDFDownloadError):
+                raise
+            raise PDFDownloadError(f"下载错误: {e}")
 
     def get_date_range(self, days: int) -> tuple[str, str]:
         """

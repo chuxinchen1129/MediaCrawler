@@ -83,4 +83,4 @@ PRIORITY_TOPICS = [
 ]
 
 # 强制筛选模式：只下载包含以下关键词的报告（留空则下载所有）
-FORCE_FILTER_KEYWORDS = ["便利店", "食品饮料", "零售", "功能性食品", "功能食品"]
+FORCE_FILTER_KEYWORDS = []
