@@ -18,11 +18,6 @@ from database.db_session import get_session
 from database.models import EastmoneyReport
 from sqlalchemy import select
 
-# 导入PDFRenamer
-import sys
-sys.path.insert(0, '/Users/echochen/Desktop/DMS/skills/baogaomiao/scripts')
-from file_namer import PDFRenamer
-
 # PDF页数检测库
 PDF_LIB = None
 try:
@@ -91,6 +86,23 @@ class EastmoneyPdfStorageImpl:
         """Ensure directory exists"""
         os.makedirs(path, exist_ok=True)
 
+    def _sanitize_filename_part(self, value: str, max_length: int) -> str:
+        cleaned = re.sub(r'[\\/:*?"<>|\n\r\t]', '_', value or "")
+        cleaned = re.sub(r"\s+", " ", cleaned).strip(" ._")
+        return cleaned[:max_length]
+
+    def _build_filename(self, org_name: str, report_title: str, infocode: str, extension: str) -> str:
+        safe_org = self._sanitize_filename_part(org_name, 40)
+        safe_title = self._sanitize_filename_part(report_title, 120)
+
+        if safe_org and safe_title:
+            return f"{safe_org}+{safe_title}{extension}"
+        if safe_title:
+            return f"{safe_title}{extension}"
+        if safe_org:
+            return f"{safe_org}+{infocode}{extension}"
+        return f"{infocode}{extension}"
+
     async def store_pdf(self, pdf_data: dict) -> str:
         """
         Save PDF file to storage directory and check page count
@@ -113,18 +125,7 @@ class EastmoneyPdfStorageImpl:
         # Ensure save directory exists
         self._ensure_dir(self.pdf_save_dir)
 
-        # Generate filename: use title+orgName if available, otherwise infocode
-        if report_title:
-            # Clean title for filesystem safety
-            safe_title = re.sub(r'[\\/:*?"<>|\n\r\t]', '_', report_title)
-            safe_title = safe_title.strip()[:100]  # Limit length
-            if org_name:
-                safe_org = re.sub(r'[\\/:*?"<>|\n\r\t]', '_', org_name).strip()[:30]
-                filename = f"{safe_title}_{safe_org}{extension}"
-            else:
-                filename = f"{safe_title}{extension}"
-        else:
-            filename = f"{infocode}{extension}"
+        filename = self._build_filename(org_name, report_title, infocode, extension)
 
         # Ensure filename is unique
         file_path = os.path.join(self.pdf_save_dir, filename)
@@ -173,48 +174,33 @@ class EastmoneyPdfStorageImpl:
         moved_paths = []
         deleted_count = 0
         result = {}
-        renamer = PDFRenamer()
+        selected_reports = {}
+
+        try:
+            async with get_session() as session:
+                if session is not None and infocodes:
+                    stmt = select(EastmoneyReport).where(EastmoneyReport.infocode.in_(infocodes))
+                    db_result = await session.execute(stmt)
+                    for report in db_result.scalars().all():
+                        pdf_basename = os.path.basename(report.pdf_path or "")
+                        if pdf_basename:
+                            selected_reports[pdf_basename] = report
+        except Exception as e:
+            utils.logger.warning(f"[EastmoneyPdfStorage] Failed to preload selected reports: {e}")
 
         for filename in all_files:
-            infocode = filename.replace(".pdf", "")
+            report = selected_reports.get(filename)
+            infocode = report.infocode if report else filename.replace(".pdf", "")
 
-            if infocode in infocodes:
+            if report is not None:
                 # Check page count before moving
                 file_path = os.path.join(self.pdf_save_dir, filename)
                 page_count = get_pdf_page_count(file_path)
 
                 if page_count >= self.min_page_count:
-                    # Get report info from database for renaming
-                    org_name = ""
-                    report_title = ""
-
-                    try:
-                        async with get_session() as session:
-                            if session is None:
-                                utils.logger.warning(f"[EastmoneyPdfStorage] Database session is None, skipping rename for {infocode}")
-                            else:
-                                stmt = select(EastmoneyReport).where(
-                                    EastmoneyReport.infocode == infocode
-                                )
-                                db_result = await session.execute(stmt)
-                                report = db_result.scalar_one_or_none()
-                                if report:
-                                    org_name = report.org_name or ""
-                                    report_title = report.report_title or ""
-                                    utils.logger.info(f"[EastmoneyPdfStorage] Found report: {org_name} - {report_title}")
-                                else:
-                                    utils.logger.warning(f"[EastmoneyPdfStorage] Report not found in database: {infocode}")
-                    except Exception as e:
-                        utils.logger.warning(f"[EastmoneyPdfStorage] Failed to get report info: {e}")
-
-                    # Generate new filename with org name
-                    if report_title:
-                        new_filename = renamer.generate_filename(report_title, org_name)
-                        # Ensure .pdf extension
-                        if not new_filename.endswith('.pdf'):
-                            new_filename += '.pdf'
-                    else:
-                        new_filename = filename
+                    org_name = report.org_name or ""
+                    report_title = report.report_title or ""
+                    new_filename = self._build_filename(org_name, report_title, infocode, ".pdf")
 
                     # Move to target directory with new name
                     src_path = os.path.join(self.pdf_save_dir, filename)
