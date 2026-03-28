@@ -18,11 +18,12 @@
 # 使用本代码即表示您同意遵守上述原则和LICENSE中的所有条款。
 
 import asyncio
+import requests
 from typing import List, Dict, Optional
 from datetime import datetime
 
 from tools import utils
-import config as eastmoney_config
+import config.eastmoney_config as eastmoney_config
 
 
 class EastmoneyFeishuBot:
@@ -134,90 +135,54 @@ class EastmoneyFeishuBot:
         utils.logger.info(f"[EastmoneyFeishuBot] Prepared message ({len(message_text)} chars)")
         utils.logger.debug(f"[EastmoneyFeishuBot] Message preview (first 500 chars):\n{message_text[:500]}")
 
-        # Check if MCP tools are available
-        mcp_available = False
+        # 使用 feishu_bot_notifier.py 脚本发送消息
+        return await self._send_via_script_notifier(message_text)
+
+    async def _send_via_script_notifier(self, message: str) -> bool:
+        """
+        使用 feishu_bot_notifier.py 脚本发送消息
+
+        Args:
+            message: 消息内容
+
+        Returns:
+            是否发送成功
+        """
+        import subprocess
+        from pathlib import Path
+
         try:
-            # Try to import MCP tools
-            from mcp__lark_mcp__im_v1_message_create import MessageParams, MessageContent, MessageCard
-            from mcp__lark_mcp__im_v1_message_create import Card, CardElement, CardHeader, ModuleSection, MarkdownElement, TextTag, MessageConfig
-            mcp_available = True
-        except ImportError:
-            utils.logger.warning("[EastmoneyFeishuBot] MCP Lark tools not available, using demo mode")
+            notifier_script = Path("/Users/echochen/Desktop/DMS/skills/feishu-universal/scripts/feishu_bot_notifier.py")
 
-        if not mcp_available:
-            # Demo mode: just print the message
-            print("=" * 60)
-            print("【飞书消息预览（Demo模式）】")
-            print(message_text)
-            print("=" * 60)
-            return False
+            if not notifier_script.exists():
+                utils.logger.error(f"[EastmoneyFeishuBot] Feishu notifier script not found: {notifier_script}")
+                # 回退到打印消息
+                print("=" * 60)
+                print("【飞书消息】")
+                print(message)
+                print("=" * 60)
+                return False
 
-        # Create message card using MCP tools
-        try:
-            # Create card elements
-            elements = []
-            for i, report in enumerate(reports[:5], 1):  # Limit to 5 reports to avoid message length
-                org_name = report.get("org_name", "未知机构")
-                title = report.get("title", "无标题")
-                pages = report.get("pdf_pages", 0)
-                infocode = report.get("infocode", "")
-
-                # Create markdown element for each report
-                text = f"{i}. [{org_name}] {title} - {pages}页 ({infocode})"
-                elements.append(
-                    CardElement(
-                        tag=MarkdownElement.markdown,
-                        text=text
-                    )
-                )
-
-            # Add instructions
-            elements.extend([
-                CardElement(
-                    tag=MarkdownElement.markdown,
-                    text="\n\n请回复您要保留的研报编号（多个用逗号分隔）：\n例如：1,2,3\n或回复：全部保留 / 全部删除"
-                )
-            ])
-
-            # Create card
-            card = Card(
-                config=MessageConfig.wide,
-                header=CardHeader(
-                    title="📊 东方财富研报通知",
-                    template="white"
-                ),
-                elements=[
-                    ModuleSection(
-                        text=TextTag.plain,
-                        elements=elements
-                    )
-                ]
+            # 调用飞书通知脚本
+            result = await asyncio.create_subprocess_exec(
+                '/opt/homebrew/bin/python3',
+                str(notifier_script),
+                '--message',
+                message,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
             )
+            stdout, stderr = await result.communicate()
 
-            # Create message content
-            content = MessageContent(
-                receive_id_type="open_id",
-                receive_id=self.chat_id,
-                msg_type="interactive",
-                content=card
-            )
-
-            # Create message params
-            params = MessageParams(
-                receive_id=content.receive_id,
-                receive_id_type=content.receive_id_type,
-                msg_type=content.msg_type,
-                content=content
-            )
-
-            # Send message using MCP tool
-            result = await mcp__lark_mcp__im_v1_message_create(params=params)
-
-            utils.logger.info(f"[EastmoneyFeishuBot] Message sent successfully. Result: {result}")
-            return True
+            if result.returncode == 0:
+                utils.logger.info("[EastmoneyFeishuBot] Message sent via feishu_bot_notifier.py")
+                return True
+            else:
+                utils.logger.error(f"[EastmoneyFeishuBot] Feishu notifier failed: {stderr.decode()}")
+                return False
 
         except Exception as e:
-            utils.logger.error(f"[EastmoneyFeishuBot] Failed to send Feishu message: {e}")
+            utils.logger.error(f"[EastmoneyFeishuBot] Error calling feishu_bot_notifier: {e}")
             return False
 
 
@@ -229,19 +194,83 @@ async def send_and_notify_reports(reports: List[Dict]) -> Optional[List[str]]:
         reports: 研报列表
 
     Returns:
-        用户选择的infocode列表，或None表示超时
+        用户选择的infocode列表，或None表示超时/取消
     """
     bot = EastmoneyFeishuBot()
+    bot_server_url = "http://localhost:5001"
 
-    # Send report list to Feishu
-    if not await bot.send_report_list(reports):
-        utils.logger.warning("[EastmoneyFeishuBot] Failed to send report list to Feishu")
+    # 提取 infocodes
+    infocodes = [r.get("infocode", "") for r in reports]
+
+    # 1. 先保存待选择的报告列表到 bot server
+    try:
+        response = requests.post(
+            f"{bot_server_url}/api/eastmoney/save_selection",
+            json={
+                "total_count": len(reports),
+                "infocodes": infocodes
+            },
+            timeout=5
+        )
+        if response.status_code != 200:
+            utils.logger.error(f"[EastmoneyFeishuBot] Failed to save selection to bot server: {response.text}")
+            return None
+        utils.logger.info("[EastmoneyFeishuBot] Saved selection data to bot server")
+    except requests.RequestException as e:
+        utils.logger.error(f"[EastmoneyFeishuBot] Bot server not available: {e}")
+        utils.logger.error("[EastmoneyFeishuBot] Please ensure bot server is running: python3 bot_server.py")
         return None
 
-    # Wait for user selection (in demo mode, just skip the actual wait)
-    utils.logger.info("[EastmoneyFeishuBot] Demo mode: skipping user wait, using default selection")
+    # 2. 发送报告列表到飞书
+    if not await bot.send_report_list(reports):
+        utils.logger.warning("[EastmoneyFeishuBot] Failed to send report list to Feishu")
+        # 清除 bot server 中的选择数据
+        requests.post(f"{bot_server_url}/api/eastmoney/clear_selection", timeout=5)
+        return None
 
-    # In production, you would wait for actual Feishu reply here
-    # selected_infocodes = await bot.process_user_selection("skip", all_infocodes)
+    # 3. 轮询等待用户选择（最多15分钟）
+    utils.logger.info("[EastmoneyFeishuBot] Waiting for user selection (max 15 minutes)...")
 
-    return []
+    max_wait_time = 900  # 15分钟 = 900秒
+    check_interval = 10  # 每10秒检查一次
+    elapsed = 0
+
+    while elapsed < max_wait_time:
+        try:
+            response = requests.get(f"{bot_server_url}/api/eastmoney/get_selection", timeout=5)
+            if response.status_code == 200:
+                data = response.json().get("data", {})
+                status = data.get("status")
+                selection = data.get("selection")
+
+                if status == "ready":
+                    utils.logger.info(f"[EastmoneyFeishuBot] User selection received: {selection}")
+                    # 清除选择数据
+                    requests.post(f"{bot_server_url}/api/eastmoney/clear_selection", timeout=5)
+                    return selection
+                elif status == "cancelled":
+                    utils.logger.info("[EastmoneyFeishuBot] User cancelled selection")
+                    # 清除选择数据
+                    requests.post(f"{bot_server_url}/api/eastmoney/clear_selection", timeout=5)
+                    return []
+                elif status == "waiting":
+                    # 继续等待
+                    pass
+                else:
+                    utils.logger.warning(f"[EastmoneyFeishuBot] Unknown status: {status}")
+        except requests.RequestException as e:
+            utils.logger.error(f"[EastmoneyFeishuBot] Error checking selection: {e}")
+
+        # 等待一段时间后再次检查
+        await asyncio.sleep(check_interval)
+        elapsed += check_interval
+
+        # 每30秒记录一次日志
+        if elapsed % 30 == 0:
+            utils.logger.info(f"[EastmoneyFeishuBot] Still waiting... ({elapsed}s elapsed)")
+
+    # 超时
+    utils.logger.warning("[EastmoneyFeishuBot] User selection timeout after 15 minutes")
+    # 清除选择数据
+    requests.post(f"{bot_server_url}/api/eastmoney/clear_selection", timeout=5)
+    return None

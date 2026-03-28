@@ -95,9 +95,9 @@ async def get_new_reports_for_feishu(days: int = None) -> List[dict]:
     from sqlalchemy import select
     from database.db_session import get_session
     from database.models import EastmoneyReport
+    import config.eastmoney_config as eastmoney_config
 
     if days is None:
-        import config as eastmoney_config
         days = eastmoney_config.DEFAULT_DAYS
 
     # Calculate timestamp threshold
@@ -111,9 +111,25 @@ async def get_new_reports_for_feishu(days: int = None) -> List[dict]:
         result = await session.execute(stmt)
         reports = result.scalars().all()
 
-        # Convert to list of dicts
+        # Convert to list of dicts with filtering
         report_list = []
         for report in reports:
+            # 筛选条件1: 页数 >= MIN_PAGE_COUNT
+            if report.pdf_pages and report.pdf_pages < eastmoney_config.MIN_PAGE_COUNT:
+                continue
+
+            # 筛选条件2: 标题不包含 EXCLUDE_KEYWORDS
+            title = report.report_title or ""
+            should_exclude = False
+            for keyword in eastmoney_config.EXCLUDE_KEYWORDS:
+                if keyword in title:
+                    should_exclude = True
+                    break
+
+            if should_exclude:
+                continue
+
+            # 筛选条件3: 如果报告数 > 阈值，检查是否包含优先主题（这里简化处理，返回所有符合条件的）
             report_list.append({
                 "infocode": report.infocode,
                 "title": report.report_title,
@@ -122,5 +138,28 @@ async def get_new_reports_for_feishu(days: int = None) -> List[dict]:
                 "pdf_pages": report.pdf_pages,
                 "pdf_path": report.pdf_path,
             })
+
+        # 如果报告数 > 阈值，按优先主题排序（优先主题排在前面，但保留所有报告）
+        if len(report_list) > eastmoney_config.REPORT_COUNT_THRESHOLD:
+            utils.logger.info(f"[get_new_reports_for_feishu] Applying priority topic sort: {len(report_list)} reports")
+
+            # 按是否包含优先主题分组
+            priority_list = []
+            other_list = []
+            for report in report_list:
+                title = report["title"]
+                has_priority_topic = False
+                for topic in eastmoney_config.PRIORITY_TOPICS:
+                    if topic in title:
+                        has_priority_topic = True
+                        break
+                if has_priority_topic:
+                    priority_list.append(report)
+                else:
+                    other_list.append(report)
+
+            # 优先主题的报告排在前面，其他报告跟在后面
+            report_list = priority_list + other_list
+            utils.logger.info(f"[get_new_reports_for_feishu] Sorted: {len(priority_list)} priority + {len(other_list)} other = {len(report_list)} total")
 
         return report_list

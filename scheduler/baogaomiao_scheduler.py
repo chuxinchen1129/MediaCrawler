@@ -119,7 +119,7 @@ class BaogaomiaoScheduler:
             })
 
             # 调用飞书发送脚本
-            feishu_notifier = Path.home() / ".claude/skills/feishu-universal/scripts/feishu_bot_notifier.py"
+            feishu_notifier = Path("/Users/echochen/Desktop/DMS/skills/feishu-universal/scripts/feishu_bot_notifier.py")
 
             if feishu_notifier.exists():
                 result = subprocess.run(
@@ -301,10 +301,10 @@ class BaogaomiaoScheduler:
 
         self.scheduler = BackgroundScheduler()
 
-        # 添加定时任务：每天早上8:30执行
+        # 添加定时任务：每天早上9:15执行
         self.scheduler.add_job(
             self.check_and_process_sync,
-            CronTrigger(hour=8, minute=30),
+            CronTrigger(hour=9, minute=15),
             id='baogaomiao_daily_check',
             name='报告喵每日检查',
             replace_existing=True

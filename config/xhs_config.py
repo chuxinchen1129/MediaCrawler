@@ -21,12 +21,14 @@
 # Xiaohongshu platform configuration
 
 # Sorting method, the specific enumeration value is in media_platform/xhs/field.py
-SORT_TYPE = "popularity_descending"
+SORT_TYPE = "time_descending"  # 按时间降序（最新发布）
 
 # Specify the note URL list, which must carry the xsec_token parameter
 XHS_SPECIFIED_NOTE_URL_LIST = [
-    "https://www.xiaohongshu.com/explore/64b95d01000000000c034587?xsec_token=AB0EFqJvINCkj6xOCKCQgfNNh8GdnBC_6XecG4QOddo3Q=&xsec_source=pc_cfeed"
-    # ........................
+    # 用户指定采集的链接 (2026-03-02)
+    "https://www.xiaohongshu.com/discovery/item/67e20b30000000000901657e?source=webshare&xhsshare=pc_web&xsec_token=CBUH5YwYvu-zgaOO7BbxOJfDhPRIXqB9gX1cKSPVoYcQY=&xsec_source=pc_share",
+    "https://www.xiaohongshu.com/discovery/item/651252f2000000001e03d86a?source=webshare&xhsshare=pc_web&xsec_token=CBoCqvlMTAsn7X8gN04X7jjEO_uxXyxs72fysQzA2-Kag=&xsec_source=pc_share",
+    "https://www.xiaohongshu.com/explore/69a51b24000000001600b6b2",
 ]
 
 # Specify the creator URL list, which needs to carry xsec_token and xsec_source parameters.

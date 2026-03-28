@@ -94,7 +94,7 @@ class TimedFeishuListener:
         with open(self.config_path, 'r') as f:
             config = json.load(f)
 
-        expires_at = config.get('expires_at', 0)
+        expires_at = config.get('expires_at') or 0
         if time.time() > expires_at:
             self.access_token = self._get_user_access_token()
         else:

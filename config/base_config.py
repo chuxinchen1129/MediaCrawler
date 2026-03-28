@@ -61,21 +61,12 @@ CUSTOM_BROWSER_PATH = ""
 # NOTE: Even if set to True, some anti-detection features may not work well in headless mode
 CDP_HEADLESS = False
 
-<<<<<<< HEAD
 # 浏览器启动超时时间（秒）
 BROWSER_LAUNCH_TIMEOUT = 120
 
 # 是否在程序结束时自动关闭浏览器
 # 设置为False可以保持浏览器运行，便于调试
 AUTO_CLOSE_BROWSER = False
-=======
-# Browser startup timeout (seconds)
-BROWSER_LAUNCH_TIMEOUT = 60
-
-# Whether to automatically close the browser when the program ends
-# Set to False to keep the browser running for easy debugging
-AUTO_CLOSE_BROWSER = True
->>>>>>> 13b6140f228c13531ad71effd8d2dc13cf45a1ab
 
 # Data saving type option configuration, supports six types: csv, db, json, sqlite, excel, postgres. It is best to save to DB, with deduplication function.
 SAVE_DATA_OPTION = "json"  # csv or db or json or sqlite or excel or postgres
@@ -89,24 +80,14 @@ USER_DATA_DIR = "%s_user_data_dir"  # %s will be replaced by platform name
 # The number of pages to start crawling starts from the first page by default
 START_PAGE = 1
 
-<<<<<<< HEAD
 # 爬取视频/帖子的数量控制
 CRAWLER_MAX_NOTES_COUNT = 20
-=======
-# Control the number of crawled videos/posts
-CRAWLER_MAX_NOTES_COUNT = 15
->>>>>>> 13b6140f228c13531ad71effd8d2dc13cf45a1ab
 
 # Controlling the number of concurrent crawlers
 MAX_CONCURRENCY_NUM = 1
 
-<<<<<<< HEAD
 # 是否开启爬媒体模式（包含图片或视频资源），默认不开启爬媒体
 ENABLE_GET_MEIDAS = True
-=======
-# Whether to enable crawling media mode (including image or video resources), crawling media is not enabled by default
-ENABLE_GET_MEIDAS = False
->>>>>>> 13b6140f228c13531ad71effd8d2dc13cf45a1ab
 
 # Whether to enable comment crawling mode. Comment crawling is enabled by default.
 ENABLE_GET_COMMENTS = True

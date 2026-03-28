@@ -24,13 +24,24 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 
 from media_platform.eastmoney.core import EastmoneyCrawler
-from feishu.eastmoney_bot import send_and_notify_reports
+from feishu.eastmoney_bot import send_and_notify_reports, EastmoneyFeishuBot
 from tools import utils
 import config as eastmoney_config
 
 
 scheduler = AsyncIOScheduler()
 crawler: EastmoneyCrawler = None
+
+
+async def _send_completion_notification(selected_count: int, total_count: int):
+    """发送完成通知到飞书"""
+    bot = EastmoneyFeishuBot()
+    message = (
+        f"✅ 东方财富研报处理完成\n\n"
+        f"已保留 {selected_count}/{total_count} 份研报\n\n"
+        f"已移动到报告喵文件夹"
+    )
+    await bot._send_via_script_notifier(message)
 
 
 async def crawl_eastmoney_reports(days: int = None):
@@ -57,13 +68,17 @@ async def crawl_eastmoney_reports(days: int = None):
         if new_reports and eastmoney_config.SEND_LIST_TO_FEISHU:
             utils.logger.info(f"[Scheduler] Sending {len(new_reports)} reports to Feishu")
 
-            # Send to Feishu and wait for selection
-            selected_infocodes = await send_and_notify_reports(new_reports)
+            # Send to Feishu and wait for selection (15 minute timeout)
+            selected_infocodes = await send_and_notify_reports(new_reports, timeout_minutes=15)
 
             if selected_infocodes is not None:
                 # Move selected PDFs to target directory
                 result = await crawler.move_selected_pdfs(selected_infocodes)
                 utils.logger.info(f"[Scheduler] Moved {len(result)} PDFs to target directory")
+
+                # Send completion notification
+                if selected_infocodes:
+                    await _send_completion_notification(len(selected_infocodes), len(new_reports))
             else:
                 utils.logger.info("[Scheduler] No user selection received")
 
@@ -80,43 +95,8 @@ async def scheduled_crawl_job():
     today = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     utils.logger.info(f"[Scheduler] Scheduled job triggered at {today}")
 
-    # Step 1: Crawl reports
+    # Crawl reports and wait for user selection
     await crawl_eastmoney_reports()
-
-    # Step 2: Start listening for user response (timeout at 8:15)
-    utils.logger.info("[Scheduler] Starting Feishu listener (15 min timeout)")
-    utils.logger.info("[Scheduler] Will auto-delete unselected PDFs at 08:15 if no response")
-
-    try:
-        # Wait for user response with timeout
-        import asyncio
-        from feishu.eastmoney_bot import EastmoneyFeishuBot
-
-        bot = EastmoneyFeishuBot()
-
-        # Listen for 15 minutes (900 seconds)
-        # In production, this would use actual Feishu webhook/event subscription
-        # For now, we use a simple timeout mechanism
-        wait_time = 15 * 60  # 15 minutes
-
-        utils.logger.info(f"[Scheduler] Listening for {wait_time} seconds...")
-
-        # TODO: Replace with actual Feishu event listener
-        # For now, just wait and then clean up unselected PDFs
-        await asyncio.sleep(wait_time)
-
-        utils.logger.info("[Scheduler] Timeout reached, cleaning up unselected PDFs")
-
-        # If no response received, delete all PDFs
-        from store.eastmoney._store_impl import EastmoneyPdfStorage
-        storage = EastmoneyPdfStorage()
-        await storage.move_to_target([])  # Empty selection = delete all
-
-        utils.logger.info("[Scheduler] Auto-cleanup completed")
-
-    except Exception as e:
-        utils.logger.error(f"[Scheduler] Error during listener: {e}", exc_info=True)
-
 
 async def start_scheduler():
     """启动调度器"""
@@ -124,7 +104,7 @@ async def start_scheduler():
         # Add scheduled job: 每天早上7点执行
         scheduler.add_job(
             scheduled_crawl_job,
-            CronTrigger(hour=8, minute=0),
+            CronTrigger(hour=9, minute=10),
             id='eastmoney_daily_crawl',
             name='东方财富研报每日爬取',
             replace_existing=True
@@ -132,7 +112,7 @@ async def start_scheduler():
 
         scheduler.start()
         utils.logger.info("[Scheduler] Eastmoney scheduler started")
-        utils.logger.info("[Scheduler] Next scheduled run: Daily at 08:00")
+        utils.logger.info("[Scheduler] Next scheduled run: Daily at 09:10")
 
         # Run the scheduler
         try:

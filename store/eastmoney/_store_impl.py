@@ -32,7 +32,7 @@ from tools import utils
 from var import source_keyword_var
 from database.mongodb_store_base import MongoDBStoreBase
 from store.excel_store_base import ExcelStoreBase
-import config as eastmoney_config
+import config.eastmoney_config as eastmoney_config
 
 
 class EastmoneyCsvStoreImplement(AbstractStore):
@@ -134,7 +134,7 @@ class EastmoneySqliteStoreImplement(AbstractStore):
             "update_time": current_time,
         }
 
-        # Only update specific fields if provided
+        # Update all relevant fields if provided
         if "pdf_path" in content_item:
             update_data["pdf_path"] = content_item["pdf_path"]
         if "download_status" in content_item:
@@ -145,6 +145,23 @@ class EastmoneySqliteStoreImplement(AbstractStore):
             update_data["pdf_size"] = content_item["pdf_size"]
         if "pdf_pages" in content_item:
             update_data["pdf_pages"] = content_item["pdf_pages"]
+        # Also update basic info in case it was missing
+        if "report_title" in content_item and content_item["report_title"]:
+            update_data["report_title"] = content_item["report_title"]
+        if "org_name" in content_item and content_item["org_name"]:
+            update_data["org_name"] = content_item["org_name"]
+        if "analyst" in content_item and content_item["analyst"]:
+            update_data["analyst"] = content_item["analyst"]
+        if "publish_date" in content_item and content_item["publish_date"]:
+            update_data["publish_date"] = content_item["publish_date"]
+        if "industry" in content_item and content_item["industry"]:
+            update_data["industry"] = content_item["industry"]
+        if "stock_code" in content_item and content_item["stock_code"]:
+            update_data["stock_code"] = content_item["stock_code"]
+        if "rating" in content_item and content_item["rating"]:
+            update_data["rating"] = content_item["rating"]
+        if "pdf_url" in content_item and content_item["pdf_url"]:
+            update_data["pdf_url"] = content_item["pdf_url"]
 
         infocode = content_item.get("infocode")
         stmt = update(EastmoneyReport).where(EastmoneyReport.infocode == infocode).values(**update_data)
@@ -196,87 +213,20 @@ class EastmoneyExcelStoreImplement(ExcelStoreBase):
 
 
 class EastmoneyPdfStorage:
-    """PDF file storage handler"""
+    """PDF file storage handler - now using pdf_storage module"""
 
     def __init__(self):
-        self.pdf_save_dir = eastmoney_config.PDF_SAVE_DIR
-        self.target_dir = eastmoney_config.TARGET_PDF_DIR
+        # Import the actual implementation
+        from .pdf_storage import EastmoneyPdfStorageImpl
+        self._impl = EastmoneyPdfStorageImpl()
 
     def _ensure_dir(self, path: str):
         """Ensure directory exists"""
         os.makedirs(path, exist_ok=True)
 
     async def store_pdf(self, pdf_data: dict) -> str:
-        """
-        Save PDF file to storage directory
-
-        Args:
-            pdf_data: dict with keys "infocode", "pdf_content", "extension_file_name"
-
-        Returns:
-            saved file path
-        """
-        infocode = pdf_data.get("infocode")
-        pdf_content = pdf_data.get("pdf_content")
-        extension = pdf_data.get("extension_file_name", ".pdf")
-
-        if not pdf_content or not infocode:
-            return ""
-
-        # Ensure save directory exists
-        self._ensure_dir(self.pdf_save_dir)
-
-        # Save to temp directory first
-        file_path = os.path.join(self.pdf_save_dir, f"{infocode}{extension}")
-        with open(file_path, "wb") as f:
-            f.write(pdf_content)
-
-        utils.logger.info(f"[EastmoneyPdfStorage] Saved PDF to: {file_path}")
-
-        return file_path
+        return await self._impl.store_pdf(pdf_data)
 
     async def move_to_target(self, infocodes: list[str]) -> dict[str, str]:
-        """
-        Move selected PDFs to target directory and delete others
+        return await self._impl.move_to_target(infocodes)
 
-        Args:
-            infocodes: list of infocodes to keep
-
-        Returns:
-            dict mapping infocode -> target file path
-        """
-        self._ensure_dir(self.target_dir)
-
-        # Get all PDF files in save directory
-        all_files = [f for f in os.listdir(self.pdf_save_dir) if f.endswith(".pdf")]
-
-        result = {}
-
-        for filename in all_files:
-            infocode = filename.replace(".pdf", "")
-
-            if infocode in infocodes:
-                # Move to target directory
-                src_path = os.path.join(self.pdf_save_dir, filename)
-                target_path = os.path.join(self.target_dir, f"{infocode}.pdf")
-
-                try:
-                    os.rename(src_path, target_path)
-                    result[infocode] = target_path
-                    utils.logger.info(f"[EastmoneyPdfStorage] Moved {filename} to target directory")
-                except FileExistsError:
-                    # Target file already exists, try to overwrite
-                    os.remove(target_path)
-                    os.rename(src_path, target_path)
-                    result[infocode] = target_path
-                    utils.logger.warning(f"[EastmoneyPdfStorage] Overwrote existing file: {target_path}")
-            else:
-                # Delete unselected file
-                src_path = os.path.join(self.pdf_save_dir, filename)
-                try:
-                    os.remove(src_path)
-                    utils.logger.info(f"[EastmoneyPdfStorage] Deleted unselected: {filename}")
-                except OSError as e:
-                    utils.logger.error(f"[EastmoneyPdfStorage] Failed to delete {filename}: {e}")
-
-        return result

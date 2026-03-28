@@ -31,7 +31,7 @@ from store.eastmoney.eastmoney_store_media import EastmoneyPdfStorage
 # Add MediaCrawler root to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import config as eastmoney_config
+import config.eastmoney_config as eastmoney_config
 
 
 async def manual_crawl(days: int = None):

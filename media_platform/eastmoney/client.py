@@ -29,7 +29,6 @@ from urllib.parse import urlencode
 import httpx
 from tenacity import retry, stop_after_attempt, wait_exponential
 
-import config as eastmoney_config
 from tools import utils
 from .exception import DataFetchError, APIRequestError, JSONPParseError
 
@@ -40,7 +39,7 @@ class EastmoneyClient:
     def __init__(self):
         self.api_base_url = eastmoney_config.API_BASE_URL
         self.pdf_base_url = eastmoney_config.PDF_BASE_URL
-        self.q_type = eastmoney_config.Q_TYPE
+        self.q_type_list = eastmoney_config.Q_TYPE_LIST
         self.default_cb_prefix = eastmoney_config.DEFAULT_CB_PREFIX
         self.timeout = eastmoney_config.API_REQUEST_TIMEOUT
 
@@ -80,7 +79,8 @@ class EastmoneyClient:
         page_no: int = 1,
         begin_date: Optional[str] = None,
         end_date: Optional[str] = None,
-        page_size: int = 50
+        page_size: int = 50,
+        q_type: str = None
     ) -> List[Dict]:
         """
         获取研报列表
@@ -90,6 +90,7 @@ class EastmoneyClient:
             begin_date: 开始日期 (YYYY-MM-DD)
             end_date: 结束日期 (YYYY-MM-DD)
             page_size: 每页数量
+            q_type: 研报类型，0=行业研报，1=公司研报
 
         Returns:
             研报列表数据
@@ -98,6 +99,10 @@ class EastmoneyClient:
             APIRequestError: API请求失败
             DataFetchError: 数据获取失败
         """
+        # 使用传入的q_type或默认取第一个
+        if q_type is None:
+            q_type = self.q_type_list[0] if self.q_type_list else "0"
+
         # 生成JSONP回调参数
         callback = self._generate_callback()
 
@@ -106,7 +111,7 @@ class EastmoneyClient:
             "cb": callback,
             "pageNo": page_no,
             "pageSize": page_size,
-            "qType": self.q_type,
+            "qType": q_type,
         }
 
         # 添加日期范围参数（如果提供）

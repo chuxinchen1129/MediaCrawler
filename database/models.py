@@ -450,3 +450,25 @@ class ZhihuCreator(Base):
     get_voteup_count = Column(Integer, default=0)
     add_ts = Column(BigInteger)
     last_modify_ts = Column(BigInteger)
+
+
+class EastmoneyReport(Base):
+    __tablename__ = 'eastmoney_report'
+    id = Column(Integer, primary_key=True)
+    infocode = Column(String(255), unique=True, index=True, nullable=False)
+    report_title = Column(Text)
+    org_name = Column(Text)
+    analyst = Column(Text)
+    publish_date = Column(String(255))
+    industry = Column(Text)
+    stock_code = Column(Text)
+    rating = Column(Text)
+    pdf_url = Column(Text)
+    pdf_path = Column(Text)
+    pdf_size = Column(Integer, default=0)
+    pdf_pages = Column(Integer, default=0)
+    attach_type = Column(String(50), default="")
+    download_status = Column(String(50), default="pending")
+    error_message = Column(Text, default="")
+    create_time = Column(BigInteger, default=0)
+    update_time = Column(BigInteger, default=0)

@@ -25,7 +25,7 @@ from .exception import DataFetchError, PDFDownloadError
 from store.eastmoney import update_eastmoney_report, update_eastmoney_report_pdf_status, save_pdf_file, get_new_reports_for_feishu
 from store.eastmoney._store_impl import EastmoneyPdfStorage
 from tools import utils
-import config as eastmoney_config
+import config.eastmoney_config as eastmoney_config
 
 
 class EastmoneyCrawler:
@@ -34,6 +34,87 @@ class EastmoneyCrawler:
     def __init__(self):
         self.client = EastmoneyClient()
         self.pdf_storage = EastmoneyPdfStorage()
+
+    def _filter_reports(self, reports: List[Dict]) -> List[Dict]:
+        """
+        筛选报告，只保留符合条件的报告
+
+        筛选逻辑：
+        1. 页数 >= MIN_PAGE_COUNT (15页)
+        2. 标题不包含 EXCLUDE_KEYWORDS
+        3. 如果配置了 FORCE_FILTER_KEYWORDS，则只保留包含这些关键词的报告
+        4. 如果总报告数 > REPORT_COUNT_THRESHOLD，则只保留包含 PRIORITY_TOPICS 的报告
+
+        Args:
+            reports: 原始报告列表
+
+        Returns:
+            筛选后的报告列表
+        """
+        filtered = []
+
+        for report in reports:
+            title = report.get("title", "")
+            pages = report.get("attachPages", 0)
+            abstract = report.get("abstract", "")
+
+            # 规则1: 页数 >= MIN_PAGE_COUNT
+            if pages < eastmoney_config.MIN_PAGE_COUNT:
+                utils.logger.debug(f"[EastmoneyCrawler] Filtered out (pages < {eastmoney_config.MIN_PAGE_COUNT}): {title[:50]}")
+                continue
+
+            # 规则2: 标题不包含 EXCLUDE_KEYWORDS
+            should_exclude = False
+            for keyword in eastmoney_config.EXCLUDE_KEYWORDS:
+                if keyword in title:
+                    utils.logger.debug(f"[EastmoneyCrawler] Filtered out (contains '{keyword}'): {title[:50]}")
+                    should_exclude = True
+                    break
+
+            if should_exclude:
+                continue
+
+            # 规则3: 强制筛选模式（如果配置了 FORCE_FILTER_KEYWORDS）
+            if eastmoney_config.FORCE_FILTER_KEYWORDS:
+                has_keyword = False
+                for keyword in eastmoney_config.FORCE_FILTER_KEYWORDS:
+                    if keyword in title or keyword in abstract:
+                        has_keyword = True
+                        break
+                if not has_keyword:
+                    utils.logger.debug(f"[EastmoneyCrawler] Filtered out (no force filter keyword): {title[:50]}")
+                    continue
+
+            # 通过初步筛选，加入候选列表
+            filtered.append(report)
+
+        # 规则4: 如果候选报告数 > 阈值，则按优先主题排序（优先主题排在前面，但保留所有报告）
+        if len(filtered) > eastmoney_config.REPORT_COUNT_THRESHOLD:
+            utils.logger.info(f"[EastmoneyCrawler] Report count ({len(filtered)}) > threshold ({eastmoney_config.REPORT_COUNT_THRESHOLD}), applying priority topic sort")
+
+            priority_list = []
+            other_list = []
+            for report in filtered:
+                title = report.get("title", "")
+                abstract = report.get("abstract", "")
+
+                # 检查是否包含优先主题关键词
+                has_priority_topic = False
+                for topic in eastmoney_config.PRIORITY_TOPICS:
+                    if topic in title or topic in abstract:
+                        has_priority_topic = True
+                        break
+
+                if has_priority_topic:
+                    priority_list.append(report)
+                else:
+                    other_list.append(report)
+
+            # 优先主题的报告排在前面，其他报告跟在后面
+            filtered = priority_list + other_list
+            utils.logger.info(f"[EastmoneyCrawler] Sorted: {len(priority_list)} priority + {len(other_list)} other = {len(filtered)} reports")
+
+        return filtered
 
     async def start(self, days: Optional[int] = None) -> List[Dict]:
         """
@@ -53,44 +134,56 @@ class EastmoneyCrawler:
         # Get date range
         begin_date, end_date = self.client.get_date_range(days)
 
-        # Fetch all pages
+        # 遍历所有研报类型进行爬取
         all_reports = []
-        page_no = 1
-        max_notes = eastmoney_config.PAGE_SIZE * 5  # Max 5 pages to avoid infinite loops
+        for q_type in eastmoney_config.Q_TYPE_LIST:
+            type_name = "行业研报" if q_type == "0" else "公司研报"
+            utils.logger.info(f"[EastmoneyCrawler] 开始爬取 {type_name} (qType={q_type})")
 
-        while len(all_reports) < max_notes:
-            utils.logger.info(f"[EastmoneyCrawler] Fetching page {page_no}...")
+            # Fetch all pages
+            page_no = 1
+            max_notes = eastmoney_config.PAGE_SIZE * 5  # Max 5 pages to avoid infinite loops
 
-            try:
-                reports = await self.client.fetch_report_list(
-                    page_no=page_no,
-                    begin_date=begin_date,
-                    end_date=end_date
-                )
+            while len(all_reports) < max_notes:
+                utils.logger.info(f"[EastmoneyCrawler] Fetching {type_name} page {page_no}...")
 
-                if not reports:
-                    utils.logger.info(f"[EastmoneyCrawler] No more reports on page {page_no}")
+                try:
+                    reports = await self.client.fetch_report_list(
+                        page_no=page_no,
+                        begin_date=begin_date,
+                        end_date=end_date,
+                        q_type=q_type
+                    )
+
+                    if not reports:
+                        utils.logger.info(f"[EastmoneyCrawler] No more {type_name} on page {page_no}")
+                        break
+
+                    # 筛选报告：只保留符合条件的报告
+                    filtered_reports = self._filter_reports(reports)
+                    utils.logger.info(f"[EastmoneyCrawler] Filtered {len(reports)} -> {len(filtered_reports)} reports")
+
+                    all_reports.extend(filtered_reports)
+
+                    # Process each report
+                    for report_data in filtered_reports:
+                        await self._process_report(report_data)
+
+                    page_no += 1
+
+                    # Sleep between page requests
+                    await asyncio.sleep(eastmoney_config.REQUEST_INTERVAL)
+
+                except DataFetchError as e:
+                    utils.logger.error(f"[EastmoneyCrawler] Failed to fetch {type_name} page {page_no}: {e}")
+                    break
+                except Exception as e:
+                    utils.logger.error(f"[EastmoneyCrawler] Unexpected error on {type_name} page {page_no}: {e}")
                     break
 
-                all_reports.extend(reports)
+            utils.logger.info(f"[EastmoneyCrawler] {type_name} 爬取完成")
 
-                # Process each report
-                for report_data in reports:
-                    await self._process_report(report_data)
-
-                page_no += 1
-
-                # Sleep between page requests
-                await asyncio.sleep(eastmoney_config.REQUEST_INTERVAL)
-
-            except DataFetchError as e:
-                utils.logger.error(f"[EastmoneyCrawler] Failed to fetch page {page_no}: {e}")
-                break
-            except Exception as e:
-                utils.logger.error(f"[EastmoneyCrawler] Unexpected error on page {page_no}: {e}")
-                break
-
-        utils.logger.info(f"[EastmoneyCrawler] Crawl completed. Total reports: {len(all_reports)}")
+        utils.logger.info(f"[EastmoneyCrawler] Overall crawl completed. Total reports: {len(all_reports)}")
 
         # Get newly downloaded reports for Feishu notification
         new_reports = await get_new_reports_for_feishu(days)
