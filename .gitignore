@@ -206,3 +206,19 @@ feishu/config.json
 __pycache__/
 *.pyc
 *.pyo
+
+# Local databases
+*.db
+eastmoney_pdfs/
+
+# Vendor/bundled libs
+tenacity/
+
+# State files
+.baogaomiao_state.json
+
+# Claude/docs
+claude.cnmd
+
+# Shell scripts
+快速采集.sh
