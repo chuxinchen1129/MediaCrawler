@@ -19,132 +19,113 @@
 
 # 基础配置
 PLATFORM = "xhs"  # 平台，xhs | dy | ks | bili | wb | tieba | zhihu
-# 是否使用海外版小红书 (rednote.com)
-# 开启后 API 走 webapi.rednote.com，cookie 域使用 .rednote.com
-XHS_INTERNATIONAL = False
-
-KEYWORDS = "睡眠,失眠,入睡困难"  # 关键词搜索配置，以英文逗号分隔
+KEYWORDS = "左点睡眠仪"  # 关键词搜索配置，以英文逗号分隔
 LOGIN_TYPE = "qrcode"  # qrcode or phone or cookie
 COOKIES = ""
-CRAWLER_TYPE = "search"  # search(搜索) | detail(帖子详情) | creator(创作者主页数据)
+CRAWLER_TYPE = (
+    "search"  # 爬取类型，search(关键词搜索) | detail(帖子详情)| creator(创作者主页数据)
+)
+
+XHS_INTERNATIONAL = False  # [from upstream 海外版开关，当前关]
 # 是否开启 IP 代理
 ENABLE_IP_PROXY = False
 
-# Number of proxy IP pools
+# 代理IP池数量
 IP_PROXY_POOL_COUNT = 2
 
-# Proxy IP provider name
-IP_PROXY_PROVIDER_NAME = "kuaidaili"  # kuaidaili | wandouhttp | static
+# 代理IP提供商名称
+IP_PROXY_PROVIDER_NAME = "kuaidaili"  # kuaidaili | wandouhttp
 
-# Static proxy configuration (used when IP_PROXY_PROVIDER_NAME is set to "static")
-# Format: "http://your_home_domain:port" or "http://user:password@your_home_domain:port"
-STATIC_PROXY_URL = ""
+# [from upstream] STATIC_PROXY_URL = ""
 
-# Setting to True will not open the browser (headless browser)
-# Setting False will open a browser
-# If Xiaohongshu keeps scanning the code to log in but fails, open the browser and manually pass the sliding verification code.
-# If Douyin keeps prompting failure, open the browser and see if mobile phone number verification appears after scanning the QR code to log in. If it does, manually go through it and try again.
+# 设置为True不会打开浏览器（无头浏览器）
+# 设置False会打开一个浏览器
+# 小红书如果一直扫码登录不通过，打开浏览器手动过一下滑动验证码
+# 抖音如果一直提示失败，打开浏览器看下是否扫码登录之后出现了手机号验证，如果出现了手动过一下再试。
 HEADLESS = False
 
-# Whether to save login status
+# 是否保存登录状态
 SAVE_LOGIN_STATE = True
 
 # ==================== CDP (Chrome DevTools Protocol) 配置 ====================
-# 是否启用 CDP 模式 - 使用用户本地的 Chrome/Edge 浏览器进行爬取，具有更好的反检测能力
-# 开启后，会自动检测并启动用户的 Chrome/Edge 浏览器，通过 CDP 协议进行控制
-# 该方式使用真实浏览器环境，包括用户的扩展、Cookie 和设置，大幅降低被风控检测的风险
+# 是否启用CDP模式 - 使用用户现有的Chrome/Edge浏览器进行爬取，提供更好的反检测能力
+# 启用后将自动检测并启动用户的Chrome/Edge浏览器，通过CDP协议进行控制
+# 这种方式使用真实的浏览器环境，包括用户的扩展、Cookie和设置，大大降低被检测的风险
 ENABLE_CDP_MODE = True
 
-# 是否连接用户已打开的浏览器，而不是启动新的浏览器
-# 开启后，程序会连接一个已经启用远程调试的浏览器
-# 这种方式反检测效果最好，因为直接使用用户真实浏览器的所有 Cookie、扩展和浏览历史
-CDP_CONNECT_EXISTING = True
+# CDP调试端口，用于与浏览器通信
 
-# CDP 调试端口，用于与浏览器通信
+CDP_CONNECT_EXISTING = True  # [from upstream]
 # 如果端口被占用，系统会自动尝试下一个可用端口
 CDP_DEBUG_PORT = 9222
 
 # 自定义浏览器路径（可选）
-# 如果为空，系统会自动检测 Chrome/Edge 的安装路径
-# Windows 示例: "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
-# macOS 示例: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+# 如果为空，系统会自动检测Chrome/Edge的安装路径
+# Windows示例: "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
+# macOS示例: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 CUSTOM_BROWSER_PATH = ""
 
-# 是否在 CDP 模式下启用无头模式
-# 注意：即使设置为 True，某些反检测功能在无头模式下可能无法正常工作
+# CDP模式下是否启用无头模式
+# 注意：即使设置为True，某些反检测功能在无头模式下可能效果不佳
 CDP_HEADLESS = False
 
 # 浏览器启动超时时间（秒）
-BROWSER_LAUNCH_TIMEOUT = 120
+BROWSER_LAUNCH_TIMEOUT = 60
 
 # 是否在程序结束时自动关闭浏览器
 # 设置为False可以保持浏览器运行，便于调试
 AUTO_CLOSE_BROWSER = False
-BROWSER_LAUNCH_TIMEOUT = 60
 
-# 是否连接用户已打开的浏览器，而不是启动新的浏览器
-# 开启后，程序会连接一个已经启用了远程调试的浏览器
-# 用户需要在 Chrome 中开启远程调试：chrome://inspect/#remote-debugging
-# 或者使用命令行参数启动 Chrome：--remote-debugging-port=9222
-# 这种方式反检测效果最好，因为直接使用用户真实浏览器的所有 Cookie、扩展和浏览历史
-CDP_CONNECT_EXISTING = True
+CDP_CONNECT_EXISTING = True  # [from upstream]
 
-# 程序结束时是否自动关闭浏览器
-# 设置为 False 可以保持浏览器运行，方便调试
-AUTO_CLOSE_BROWSER = True
+# 数据保存类型选项配置,支持六种类型：csv、db、json、sqlite、excel、postgres, 最好保存到DB，有排重的功能。
+SAVE_DATA_OPTION = "excel"  # csv or db or json or sqlite or excel or postgres
 
-# Data saving type option configuration, supports: csv, db, json, jsonl, sqlite, excel, postgres. It is best to save to DB, with deduplication function.
-SAVE_DATA_OPTION = "jsonl"  # csv or db or json or jsonl or sqlite or excel or postgres
-
-# Data saving path, if not specified by default, it will be saved to the data folder.
-SAVE_DATA_PATH = ""
-
-# Browser file configuration cached by the user's browser
+# 用户浏览器缓存的浏览器文件配置
 USER_DATA_DIR = "%s_user_data_dir"  # %s will be replaced by platform name
 
-# The number of pages to start crawling starts from the first page by default
+# 爬取开始页数 默认从第一页开始
 START_PAGE = 1
 
 # 爬取视频/帖子的数量控制
-CRAWLER_MAX_NOTES_COUNT = 30
+CRAWLER_MAX_NOTES_COUNT = 200
 
-# 搜索排序：popularity_descending = 按热度降序（爆款采集用），general = 综合
-SORT_TYPE = "popularity_descending"
+# [from upstream] SORT_TYPE = "popularity_descending"
 
-# Controlling the number of concurrent crawlers
+# 并发爬虫数量控制
 MAX_CONCURRENCY_NUM = 1
 
 # 是否开启爬媒体模式（包含图片或视频资源），默认不开启爬媒体
-ENABLE_GET_MEIDAS = True
+ENABLE_GET_MEIDAS = False
 
-# Whether to enable comment crawling mode. Comment crawling is enabled by default.
-ENABLE_GET_COMMENTS = False
+# 是否开启爬评论模式, 默认开启爬评论
+ENABLE_GET_COMMENTS = False  # 关闭评论爬取
 
-# Control the number of crawled first-level comments (single video/post)
-CRAWLER_MAX_COMMENTS_COUNT_SINGLENOTES = 10
+# 爬取一级评论的数量控制(单视频/帖子)
+CRAWLER_MAX_COMMENTS_COUNT_SINGLENOTES = 30
 
-# Whether to enable the mode of crawling second-level comments. By default, crawling of second-level comments is not enabled.
-# If the old version of the project uses db, you need to refer to schema/tables.sql line 287 to add table fields.
+# 是否开启爬二级评论模式, 默认不开启爬二级评论
+# 老版本项目使用了 db, 则需参考 schema/tables.sql line 287 增加表字段
 ENABLE_GET_SUB_COMMENTS = False
 
-# word cloud related
-# Whether to enable generating comment word clouds
+# 词云相关
+# 是否开启生成评论词云图
 ENABLE_GET_WORDCLOUD = False
-# Custom words and their groups
-# Add rule: xx:yy where xx is a custom-added phrase, and yy is the group name to which the phrase xx is assigned.
+# 自定义词语及其分组
+# 添加规则：xx:yy 其中xx为自定义添加的词组，yy为将xx该词组分到的组名。
 CUSTOM_WORDS = {
-    "零几": "年份",  # Recognize "zero points" as a whole
-    "高频词": "专业术语",  # Example custom words
+    "零几": "年份",  # 将“零几”识别为一个整体
+    "高频词": "专业术语",  # 示例自定义词
 }
 
-# Deactivate (disabled) word file path
+# 停用(禁用)词文件路径
 STOP_WORDS_FILE = "./docs/hit_stopwords.txt"
 
-# Chinese font file path
+# 中文字体文件路径
 FONT_PATH = "./docs/STZHONGS.TTF"
 
-# Crawl interval
-CRAWLER_MAX_SLEEP_SEC = 2
+# 爬取间隔时间
+CRAWLER_MAX_SLEEP_SEC = 5
 
 # 是否禁用 SSL 证书验证。仅在使用企业代理、Burp Suite、mitmproxy 等会注入自签名证书的中间人代理时设为 True。
 # 警告：禁用 SSL 验证将使所有流量暴露于中间人攻击风险，请勿在生产环境中开启。

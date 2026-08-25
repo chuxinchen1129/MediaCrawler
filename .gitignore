@@ -228,3 +228,4 @@ claude.cnmd
 快速采集.sh
 .omx/
 *.local.bak
+.DS_Store

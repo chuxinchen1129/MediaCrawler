@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>场景适配性分析</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 720pt;
+            height: 405pt;
+            font-family: Arial, Helvetica, sans-serif;
+            background: white;
+            overflow: hidden;
+        }
+
+        .header {
+            background: #277884;
+            height: 60pt;
+            display: flex;
+            align-items: center;
+            padding-left: 40pt;
+        }
+
+        .header h1 {
+            font-size: 28pt;
+            font-weight: bold;
+            color: white;
+        }
+
+        .content {
+            display: flex;
+            padding: 25pt 40pt 35pt 40pt;
+        }
+
+        .left-column {
+            flex: 1;
+            padding-right: 18pt;
+        }
+
+        .right-column {
+            flex: 1;
+            padding-left: 18pt;
+        }
+
+        .section-title {
+            font-size: 16pt;
+            font-weight: bold;
+            color: #277884;
+            margin-bottom: 12pt;
+        }
+
+        .scenario-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8pt;
+        }
+
+        .scenario-item {
+            background: #F4F6F6;
+            padding: 8pt;
+            border-radius: 6pt;
+            text-align: center;
+        }
+
+        .scenario-icon {
+            font-size: 16pt;
+            margin-bottom: 3pt;
+        }
+
+        .scenario-name {
+            font-size: 12pt;
+            font-weight: bold;
+            color: #2C2C2C;
+            margin-bottom: 2pt;
+        }
+
+        .scenario-count {
+            font-size: 10pt;
+            color: #5EA8A7;
+        }
+
+        .chart-placeholder {
+            width: 100%;
+            height: 130pt;
+            background: #F4F6F6;
+            border: 2pt dashed #5EA8A7;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8pt;
+            margin-bottom: 10pt;
+        }
+
+        .chart-placeholder p {
+            color: #5EA8A7;
+            font-size: 13pt;
+        }
+
+        .key-insight {
+            background: #5EA8A7;
+            color: white;
+            padding: 10pt;
+            border-radius: 6pt;
+        }
+
+        .insight-title {
+            font-size: 13pt;
+            font-weight: bold;
+            margin-bottom: 5pt;
+        }
+
+        .insight-text {
+            font-size: 11pt;
+            line-height: 1.3;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>场景适配性分析</h1>
+    </div>
+    <div class="content">
+        <div class="left-column">
+            <h2 class="section-title">高频消费场景TOP4</h2>
+            <div class="scenario-grid">
+                <div class="scenario-item">
+                    <p class="scenario-icon">🎉</p>
+                    <p class="scenario-name">聚会</p>
+                    <p class="scenario-count">82次提及</p>
+                </div>
+                <div class="scenario-item">
+                    <p class="scenario-icon">🚗</p>
+                    <p class="scenario-name">开车</p>
+                    <p class="scenario-count">49次提及</p>
+                </div>
+                <div class="scenario-item">
+                    <p class="scenario-icon">💪</p>
+                    <p class="scenario-name">健身</p>
+                    <p class="scenario-count">39次提及</p>
+                </div>
+                <div class="scenario-item">
+                    <p class="scenario-icon">☀️</p>
+                    <p class="scenario-name">夏天</p>
+                    <p class="scenario-count">35次提及</p>
+                </div>
+            </div>
+        </div>
+        <div class="right-column">
+            <div class="chart-placeholder">
+                <p>[柱状图：场景提及次数]</p>
+            </div>
+            <div class="key-insight">
+                <p class="insight-title">场景洞察</p>
+                <p class="insight-text">无醇啤酒最适配"社交+实用"双场景：聚会保持氛围，开车/健身确保安全与健康。夏天、宵夜、火锅等场景展示其替代传统啤酒的潜力。</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

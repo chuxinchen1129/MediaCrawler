@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>愿意尝试的原因TOP5</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 720pt;
+            height: 405pt;
+            font-family: Arial, Helvetica, sans-serif;
+            background: white;
+            overflow: hidden;
+        }
+
+        .header {
+            background: #277884;
+            height: 60pt;
+            display: flex;
+            align-items: center;
+            padding-left: 40pt;
+        }
+
+        .header h1 {
+            font-size: 28pt;
+            font-weight: bold;
+            color: white;
+        }
+
+        .content {
+            display: flex;
+            padding: 25pt 40pt 35pt 40pt;
+        }
+
+        .left-column {
+            flex: 1;
+            padding-right: 20pt;
+        }
+
+        .right-column {
+            flex: 1;
+            padding-left: 20pt;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .chart-placeholder {
+            width: 100%;
+            height: 250pt;
+            background: #F4F6F6;
+            border: 2pt dashed #5EA8A7;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8pt;
+        }
+
+        .chart-placeholder p {
+            color: #5EA8A7;
+            font-size: 14pt;
+        }
+
+        .insight-item {
+            margin-bottom: 12pt;
+            padding: 10pt 12pt;
+            background: #F4F6F6;
+            border-left: 4pt solid #5EA8A7;
+            border-radius: 4pt;
+        }
+
+        .insight-rank {
+            font-size: 11pt;
+            font-weight: bold;
+            color: #277884;
+            margin-bottom: 4pt;
+        }
+
+        .insight-text {
+            font-size: 13pt;
+            color: #2C2C2C;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>愿意尝试的原因TOP5</h1>
+    </div>
+    <div class="content">
+        <div class="left-column">
+            <div class="chart-placeholder">
+                <p>[横向条形图：愿意尝试的原因]</p>
+            </div>
+        </div>
+        <div class="right-column">
+            <div class="insight-item">
+                <p class="insight-rank">NO.1 口感好 - 50.7%</p>
+                <p class="insight-text">产品体验是核心驱动力，消费者重视真实啤酒口感</p>
+            </div>
+            <div class="insight-item">
+                <p class="insight-rank">NO.2 社交/聚会 - 11.1%</p>
+                <p class="insight-text">无醇啤酒满足社交场景需求，不破坏聚会氛围</p>
+            </div>
+            <div class="insight-item">
+                <p class="insight-rank">NO.3 健身/减肥 - 9.0%</p>
+                <p class="insight-text">健康意识驱动，无醇成为健身人群理想选择</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
