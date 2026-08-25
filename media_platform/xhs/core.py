@@ -102,7 +102,17 @@ class XiaoHongShuCrawler(AbstractCrawler):
 
             # Create a client to interact with the Xiaohongshu website.
             self.xhs_client = await self.create_xhs_client(httpx_proxy_format)
-            if not await self.xhs_client.pong():
+            # 双重登录检测：先看页面 UI（侧栏"我"），API pong 仅作参考——selfinfo 偶发 -1 误判
+            ui_logged_in = False
+            try:
+                ui_logged_in = await self.context_page.is_visible(
+                    "xpath=//a[contains(@href, '/user/profile/')]//span[text()='我']", timeout=3000
+                )
+            except Exception:
+                pass
+            if ui_logged_in:
+                utils.logger.info("[XiaoHongShuCrawler] UI check: already logged in, skip API pong")
+            elif not await self.xhs_client.pong():
                 login_obj = XiaoHongShuLogin(
                     login_type=config.LOGIN_TYPE,
                     login_phone="",  # input your phone number
@@ -111,6 +121,12 @@ class XiaoHongShuCrawler(AbstractCrawler):
                     cookie_str=config.COOKIES,
                 )
                 await login_obj.begin()
+                await self.xhs_client.update_cookies(
+                    browser_context=self.browser_context,
+                    urls=self.cookie_urls,
+                )
+            else:
+                # pong 通过但 UI 没检测到（可能页面未渲染完），保险起见刷新一次 cookie
                 await self.xhs_client.update_cookies(
                     browser_context=self.browser_context,
                     urls=self.cookie_urls,
@@ -188,6 +204,9 @@ class XiaoHongShuCrawler(AbstractCrawler):
                     utils.logger.info(f"[XiaoHongShuCrawler.search] Sleeping for {config.CRAWLER_MAX_SLEEP_SEC} seconds after page {page-1}")
                 except DataFetchError:
                     utils.logger.error("[XiaoHongShuCrawler.search] Get note detail error")
+                    break
+                except RetryError as re_err:
+                    utils.logger.error(f"[XiaoHongShuCrawler.search] RetryError for keyword '{keyword}', continuing with next keyword: {re_err}")
                     break
 
     async def get_creators_and_notes(self) -> None:
@@ -311,8 +330,12 @@ class XiaoHongShuCrawler(AbstractCrawler):
                     pass
 
                 if not note_detail:
-                    note_detail = await self.xhs_client.get_note_by_id_from_html(note_id, xsec_source, xsec_token,
-                                                                                 enable_cookie=True)
+                    try:
+                        note_detail = await self.xhs_client.get_note_by_id_from_html(note_id, xsec_source, xsec_token,
+                                                                                     enable_cookie=True)
+                    except Exception as html_err:
+                        utils.logger.warning(f"[get_note_detail_async_task] HTML fallback failed for {note_id}: {html_err}")
+                        note_detail = None
                     if not note_detail:
                         utils.logger.warning(f"[skip] Failed to get note detail, Id: {note_id}, 跳过继续")
                         return None
@@ -408,6 +431,7 @@ class XiaoHongShuCrawler(AbstractCrawler):
             playwright_page=self.context_page,
             cookie_dict=cookie_dict,
             proxy_ip_pool=self.ip_proxy_pool,  # Pass proxy pool for automatic refresh
+            browser_context=self.browser_context,  # session 轮换时自动刷新 cookie
         )
         return xhs_client_obj
 

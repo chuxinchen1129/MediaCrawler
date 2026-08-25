@@ -30,7 +30,7 @@ import httpx
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from tools import utils
-from .exception import DataFetchError, APIRequestError, JSONPParseError
+from .exception import DataFetchError, APIRequestError, JSONPParseError, PDFDownloadError
 
 
 class EastmoneyClient:
@@ -80,7 +80,9 @@ class EastmoneyClient:
         begin_date: Optional[str] = None,
         end_date: Optional[str] = None,
         page_size: int = 50,
-        q_type: str = None
+        q_type: str = None,
+        industry_code: Optional[str] = None,
+        keyword: Optional[str] = None
     ) -> List[Dict]:
         """
         获取研报列表
@@ -90,7 +92,9 @@ class EastmoneyClient:
             begin_date: 开始日期 (YYYY-MM-DD)
             end_date: 结束日期 (YYYY-MM-DD)
             page_size: 每页数量
-            q_type: 研报类型，0=行业研报，1=公司研报
+            q_type: 研报类型，0=公司研报(reportType=2,有stockCode)，1=行业研报(reportType=3)
+            industry_code: 行业内码（仅 qType=0 公司研报生效，精确筛某行业的个股研报）
+            keyword: 关键词（reportapi 的 keyword 参数，按标题/摘要搜索）
 
         Returns:
             研报列表数据
@@ -113,6 +117,11 @@ class EastmoneyClient:
             "pageSize": page_size,
             "qType": q_type,
         }
+        # 定向抓取：industryCode 仅对公司研报(qType=0)生效；keyword 两类都生效
+        if industry_code:
+            params["industryCode"] = industry_code
+        if keyword:
+            params["keyword"] = keyword
 
         # 添加日期范围参数（如果提供）
         if begin_date:
@@ -195,42 +204,16 @@ class EastmoneyClient:
         Raises:
             PDFDownloadError: PDF下载失败
         """
+        # 委托共享下载器（eastmoney / cbndata 复用同一 curl 逻辑）
+        from tools.pdf_downloader import download_pdf_bytes
+
         pdf_url = self.get_pdf_url(infocode)
+        utils.logger.info(f"[EastmoneyClient] Downloading PDF: {infocode}")
 
-        utils.logger.info(f"[EastmoneyClient] Downloading PDF: {infocode} from {pdf_url}")
-
-        # 使用curl子进程下载PDF，绕过东方财富的JS防护/TLS指纹检测
-        try:
-            proc = await asyncio.create_subprocess_exec(
-                "curl", "-sL",
-                "-H", "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-                "-H", "Referer: https://data.eastmoney.com/",
-                "-o", "-",
-                pdf_url,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-            )
-            stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=eastmoney_config.PDF_DOWNLOAD_TIMEOUT)
-
-            if proc.returncode != 0:
-                raise PDFDownloadError(f"curl下载失败: {stderr.decode()}")
-
-            # 检查是否为有效的PDF
-            if not stdout[:5].startswith(b"%PDF"):
-                utils.logger.warning(
-                    f"[EastmoneyClient] 响应不是有效PDF，前20字节: {stdout[:20]}"
-                )
-
-            utils.logger.info(f"[EastmoneyClient] PDF downloaded: {len(stdout)} bytes")
-
-            return stdout
-
-        except asyncio.TimeoutError:
-            raise PDFDownloadError(f"下载超时")
-        except Exception as e:
-            if isinstance(e, PDFDownloadError):
-                raise
-            raise PDFDownloadError(f"下载错误: {e}")
+        content = await download_pdf_bytes(pdf_url)
+        if content is None:
+            raise PDFDownloadError(f"下载失败: {infocode}")
+        return content
 
     def get_date_range(self, days: int) -> tuple[str, str]:
         """

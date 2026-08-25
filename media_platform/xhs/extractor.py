@@ -43,10 +43,24 @@ class XiaoHongShuExtractor:
 
         state = re.findall(r"window.__INITIAL_STATE__=({.*})</script>", html)[
             0
-        ].replace("undefined", '""')
-        if state != "{}":
-            note_dict = humps.decamelize(json.loads(state))
-            return note_dict["note"]["note_detail_map"][note_id]["note"]
+        ]
+        # 多策略处理 undefined：先试宽松正则（只改值位置），失败再退回全替换，仍失败返回 None 不抛异常
+        parsed = None
+        cleaned = re.sub(r'(?<=:)\s*undefined(?=\s*[,}\]])', 'null', state)
+        cleaned = re.sub(r'(?<=[,\[])\s*undefined(?=\s*[,}\]])', 'null', cleaned)
+        try:
+            parsed = json.loads(cleaned)
+        except json.JSONDecodeError:
+            try:
+                parsed = json.loads(state.replace("undefined", '""'))
+            except json.JSONDecodeError:
+                return None
+        if parsed:
+            try:
+                note_dict = humps.decamelize(parsed)
+                return note_dict["note"]["note_detail_map"][note_id]["note"]
+            except (KeyError, TypeError):
+                return None
         return None
 
     def extract_creator_info_from_html(self, html: str) -> Optional[Dict]:

@@ -17,6 +17,7 @@
 # 详细许可条款请参阅项目根目录下的LICENSE文件。
 # 使用本代码即表示您同意遵守上述原则和LICENSE中的所有条款。
 
+import os
 import asyncio
 from typing import List, Dict, Optional
 
@@ -116,35 +117,90 @@ class EastmoneyCrawler:
 
         return filtered
 
-    async def start(self, days: Optional[int] = None) -> List[Dict]:
+    def _filter_by_source(self, reports: List[Dict], sources: Optional[List[str]]) -> List[Dict]:
+        """按来源机构 orgName 过滤（--source）。sources 为 None/空则不过滤。"""
+        if not sources:
+            return reports
+        keywords = []
+        for s in sources:
+            keywords.extend(eastmoney_config.SOURCE_ORG_NAMES.get(s, []))
+        if not keywords:
+            return reports
+        return [r for r in reports if any(k in (r.get("orgName") or "") for k in keywords)]
+
+    def _filter_by_keyword(self, reports: List[Dict], keyword: Optional[str]) -> List[Dict]:
+        """按关键词过滤标题/摘要（--keyword，AND 语义）。keyword 为 None/空则不过滤。"""
+        if not keyword:
+            return reports
+        return [r for r in reports if keyword in ((r.get("title") or "") + (r.get("abstract") or ""))]
+
+    def _filter_by_keywords_any(self, reports: List[Dict], keywords: Optional[List[str]]) -> List[Dict]:
+        """标题含关键词列表中任一词即保留（--industry 行业研报定向兜底）。"""
+        if not keywords:
+            return reports
+        return [r for r in reports if any(k in (r.get("title") or "") for k in keywords)]
+
+    async def start(self, days: Optional[int] = None, industry: Optional[str] = None,
+                    keyword: Optional[str] = None, sources: Optional[List[str]] = None) -> List[Dict]:
         """
         开始爬取研报
 
         Args:
             days: 爬取天数，默认从配置文件获取
+            industry: 行业名（须在 INDUSTRY_CODE_MAP）。触发双重抓取：
+                      公司研报用 industryCode 精确筛，行业研报用关键词匹配标题
+            keyword: 额外关键词（标题/摘要 AND 过滤）
+            sources: 来源机构列表（如 ["irresearch"]），按 orgName 过滤
 
         Returns:
             新下载的研报列表（用于飞书通知）
         """
         if days is None:
             days = eastmoney_config.DEFAULT_DAYS
+        if isinstance(sources, str):
+            sources = [sources]
 
-        utils.logger.info(f"[EastmoneyCrawler] Starting crawl for {days} days")
+        utils.logger.info(
+            f"[EastmoneyCrawler] Starting crawl: days={days}, industry={industry}, "
+            f"keyword={keyword}, sources={sources}"
+        )
+
+        # 行业名校验
+        if industry and industry not in eastmoney_config.INDUSTRY_CODE_MAP:
+            raise ValueError(
+                f"行业 '{industry}' 不在 INDUSTRY_CODE_MAP 中，可用 --list-industries 查看可用行业"
+            )
 
         # Get date range
         begin_date, end_date = self.client.get_date_range(days)
 
-        # 遍历所有研报类型进行爬取
+        # 构造抓取任务：(q_type, type_name, extra_kwargs)
+        # 注意：qType=0=公司研报(reportType=2)，qType=1=行业研报(reportType=3)
+        if industry:
+            industry_code = eastmoney_config.INDUSTRY_CODE_MAP[industry]
+            # 行业研报 API 不支持 industryCode，keyword 也常失配，用本地同义词兜底
+            ind_kws = eastmoney_config.INDUSTRY_KEYWORDS_MAP.get(industry, [industry])
+            tasks = [
+                ("0", "公司研报", {"industry_code": industry_code}, None),
+                # 行业研报：API keyword 对行业研报无效，正常翻页 + 本地同义词过滤
+                ("1", "行业研报", {}, ind_kws),
+            ]
+        else:
+            tasks = [
+                (q, "公司研报" if q == "0" else "行业研报", {}, None)
+                for q in eastmoney_config.Q_TYPE_LIST
+            ]
+
         all_reports = []
-        for q_type in eastmoney_config.Q_TYPE_LIST:
-            type_name = "行业研报" if q_type == "0" else "公司研报"
-            utils.logger.info(f"[EastmoneyCrawler] 开始爬取 {type_name} (qType={q_type})")
+        for q_type, type_name, extra, local_kws in tasks:
+            utils.logger.info(f"[EastmoneyCrawler] 开始爬取 {type_name} (qType={q_type}) extra={extra}")
 
-            # Fetch all pages
+            # 每个 q_type 独立计数 + 独立上限，避免跨类型累加导致后一类型被跳过
+            type_reports = []
             page_no = 1
-            max_notes = eastmoney_config.PAGE_SIZE * 5  # Max 5 pages to avoid infinite loops
+            max_notes = eastmoney_config.PAGE_SIZE * 5  # Max 5 pages per type
 
-            while len(all_reports) < max_notes:
+            while len(type_reports) < max_notes:
                 utils.logger.info(f"[EastmoneyCrawler] Fetching {type_name} page {page_no}...")
 
                 try:
@@ -152,18 +208,26 @@ class EastmoneyCrawler:
                         page_no=page_no,
                         begin_date=begin_date,
                         end_date=end_date,
-                        q_type=q_type
+                        q_type=q_type,
+                        **extra
                     )
 
                     if not reports:
                         utils.logger.info(f"[EastmoneyCrawler] No more {type_name} on page {page_no}")
                         break
 
-                    # 筛选报告：只保留符合条件的报告
+                    # 筛选：页数/排除词 → 来源 → 关键词 → 行业同义词兜底
                     filtered_reports = self._filter_reports(reports)
-                    utils.logger.info(f"[EastmoneyCrawler] Filtered {len(reports)} -> {len(filtered_reports)} reports")
+                    filtered_reports = self._filter_by_source(filtered_reports, sources)
+                    filtered_reports = self._filter_by_keyword(filtered_reports, keyword)
+                    if local_kws:
+                        filtered_reports = self._filter_by_keywords_any(filtered_reports, local_kws)
+                    utils.logger.info(
+                        f"[EastmoneyCrawler] {type_name} page {page_no}: "
+                        f"{len(reports)} -> {len(filtered_reports)} reports"
+                    )
 
-                    all_reports.extend(filtered_reports)
+                    type_reports.extend(filtered_reports)
 
                     # Process each report
                     for report_data in filtered_reports:
@@ -181,7 +245,8 @@ class EastmoneyCrawler:
                     utils.logger.error(f"[EastmoneyCrawler] Unexpected error on {type_name} page {page_no}: {e}")
                     break
 
-            utils.logger.info(f"[EastmoneyCrawler] {type_name} 爬取完成")
+            utils.logger.info(f"[EastmoneyCrawler] {type_name} 爬取完成: {len(type_reports)} reports")
+            all_reports.extend(type_reports)
 
         utils.logger.info(f"[EastmoneyCrawler] Overall crawl completed. Total reports: {len(all_reports)}")
 
@@ -279,3 +344,21 @@ class EastmoneyCrawler:
             映射 infocode -> 目标文件路径
         """
         return await self.pdf_storage.move_to_target(infocodes)
+
+    async def move_all_pdfs(self) -> Dict:
+        """移动 PDF_SAVE_DIR 下所有已下载 PDF 到 TARGET_PDF_DIR（不经飞书选择，全部保留）。"""
+        import shutil
+        src = eastmoney_config.PDF_SAVE_DIR
+        dst = eastmoney_config.TARGET_PDF_DIR
+        os.makedirs(dst, exist_ok=True)
+        moved, skipped = 0, 0
+        for f in os.listdir(src):
+            if not f.endswith(".pdf"):
+                continue
+            s = os.path.join(src, f)
+            d = os.path.join(dst, f)
+            if os.path.exists(d):
+                os.remove(s); skipped += 1; continue
+            shutil.move(s, d); moved += 1
+        utils.logger.info(f"[EastmoneyCrawler] move_all: {moved} moved, {skipped} skipped -> {dst}")
+        return {"moved": moved, "skipped": skipped, "target": dst}

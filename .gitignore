@@ -227,3 +227,4 @@ claude.cnmd
 # Shell scripts
 快速采集.sh
 .omx/
+*.local.bak

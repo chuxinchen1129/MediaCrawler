@@ -64,6 +64,7 @@ class XiaoHongShuClient(AbstractApiClient, ProxyRefreshMixin):
         playwright_page: Page,
         cookie_dict: Dict[str, str],
         proxy_ip_pool: Optional["ProxyIpPool"] = None,
+        browser_context=None,
     ):
         self.proxy = proxy
         self.timeout = timeout
@@ -75,6 +76,7 @@ class XiaoHongShuClient(AbstractApiClient, ProxyRefreshMixin):
             self._host = "https://edith.xiaohongshu.com"
             self._domain = "https://www.xiaohongshu.com"
         self.cookie_urls = [self._domain]
+        self.browser_context = browser_context  # 用于 session 轮换时自动刷新 cookie
         self.IP_ERROR_STR = "Network connection error, please check network settings or restart"
         self.IP_ERROR_CODE = 300012
         self.SECURITY_LIMIT_CODE = 300011
@@ -193,6 +195,23 @@ class XiaoHongShuClient(AbstractApiClient, ProxyRefreshMixin):
             raise NoteNotFoundError(f"Note not found or abnormal, code: {data['code']}")
         else:
             err_msg = data.get("msg", None) or f"{response.text}"
+            # session 轮换：先拉浏览器 cookie，若没变再让页面导航一次强制触发 set-cookie
+            if ("登录已过期" in (err_msg or "")) and self.browser_context is not None:
+                utils.logger.warning("[XiaoHongShuClient.request] Session expired, refreshing cookies from browser and retrying ...")
+                await self.update_cookies(self.browser_context)
+                new_cookie_str = self.headers.get("Cookie", "")
+                if new_cookie_str and kwargs.get("headers"):
+                    kwargs["headers"] = {**kwargs["headers"], "Cookie": new_cookie_str}
+                # 直接重试一次；若再过期，让页面导航刷新后再试
+                try:
+                    return await self.request(method, url, **kwargs)
+                except DataFetchError as retry_err:
+                    if "登录已过期" in str(retry_err) and await self.refresh_session_via_page():
+                        new_cookie_str = self.headers.get("Cookie", "")
+                        if new_cookie_str and kwargs.get("headers"):
+                            kwargs["headers"] = {**kwargs["headers"], "Cookie": new_cookie_str}
+                        return await self.request(method, url, **kwargs)
+                    raise
             raise DataFetchError(err_msg)
 
     @staticmethod
@@ -316,8 +335,30 @@ class XiaoHongShuClient(AbstractApiClient, ProxyRefreshMixin):
             browser_context,
             urls=urls or self.cookie_urls,
         )
+        old_session = self.cookie_dict.get("web_session", "")
         self.headers["Cookie"] = cookie_str
         self.cookie_dict = cookie_dict
+        new_session = cookie_dict.get("web_session", "")
+        if old_session and new_session and old_session != new_session:
+            utils.logger.info("[XiaoHongShuClient.update_cookies] web_session rotated, headers refreshed")
+
+    async def refresh_session_via_page(self) -> bool:
+        """
+        Session 过期兜底：让浏览器页面自己导航一次 XHS explore（触发服务端 set-cookie 轮换），
+        再从页面拉最新 cookie。返回 True 表示 cookie 有变化。
+        """
+        try:
+            page = self.playwright_page
+            await page.goto("https://www.xiaohongshu.com/explore", wait_until="domcontentloaded", timeout=30000)
+            await page.wait_for_timeout(3000)
+            old_session = self.cookie_dict.get("web_session", "")
+            await self.update_cookies(self.browser_context)
+            new_session = self.cookie_dict.get("web_session", "")
+            utils.logger.info(f"[XiaoHongShuClient.refresh_session_via_page] session: {old_session[:12]}... -> {new_session[:12]}...")
+            return old_session != new_session
+        except Exception as e:
+            utils.logger.warning(f"[XiaoHongShuClient.refresh_session_via_page] failed: {e}")
+            return False
 
     async def get_note_by_keyword(
         self,

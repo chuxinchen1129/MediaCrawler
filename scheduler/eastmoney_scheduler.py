@@ -24,29 +24,17 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 
 from media_platform.eastmoney.core import EastmoneyCrawler
-from feishu.eastmoney_bot import send_and_notify_reports, EastmoneyFeishuBot
 from tools import utils
-import config as eastmoney_config
+import config.eastmoney_config as eastmoney_config
 
 
 scheduler = AsyncIOScheduler()
 crawler: EastmoneyCrawler = None
 
 
-async def _send_completion_notification(selected_count: int, total_count: int):
-    """发送完成通知到飞书"""
-    bot = EastmoneyFeishuBot()
-    message = (
-        f"✅ 东方财富研报处理完成\n\n"
-        f"已保留 {selected_count}/{total_count} 份研报\n\n"
-        f"已移动到报告喵文件夹"
-    )
-    await bot._send_via_script_notifier(message)
-
-
 async def crawl_eastmoney_reports(days: int = None):
     """
-    爬取东方财富研报并发送到飞书
+    爬取东方财富研报，下载后全部移到目标目录（不经飞书选择）。
 
     Args:
         days: 爬取天数，默认从配置获取
@@ -62,26 +50,9 @@ async def crawl_eastmoney_reports(days: int = None):
         crawler = EastmoneyCrawler()
 
     try:
-        # Crawl reports
-        new_reports = await crawler.start(days=days)
-
-        if new_reports and eastmoney_config.SEND_LIST_TO_FEISHU:
-            utils.logger.info(f"[Scheduler] Sending {len(new_reports)} reports to Feishu")
-
-            # Send to Feishu and wait for selection (15 minute timeout)
-            selected_infocodes = await send_and_notify_reports(new_reports, timeout_minutes=15)
-
-            if selected_infocodes is not None:
-                # Move selected PDFs to target directory
-                result = await crawler.move_selected_pdfs(selected_infocodes)
-                utils.logger.info(f"[Scheduler] Moved {len(result)} PDFs to target directory")
-
-                # Send completion notification
-                if selected_infocodes:
-                    await _send_completion_notification(len(selected_infocodes), len(new_reports))
-            else:
-                utils.logger.info("[Scheduler] No user selection received")
-
+        await crawler.start(days=days)
+        result = await crawler.move_all_pdfs()
+        utils.logger.info(f"[Scheduler] 移动 {result['moved']} 份 PDF 到 {result['target']}")
         utils.logger.info("[Scheduler] Scheduled crawl completed")
 
     except Exception as e:
@@ -89,19 +60,15 @@ async def crawl_eastmoney_reports(days: int = None):
 
 
 async def scheduled_crawl_job():
-    """
-    定时爬取任务（每日早上8点执行）
-    """
+    """定时爬取任务（每日 09:10 执行）"""
     today = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     utils.logger.info(f"[Scheduler] Scheduled job triggered at {today}")
-
-    # Crawl reports and wait for user selection
     await crawl_eastmoney_reports()
+
 
 async def start_scheduler():
     """启动调度器"""
     if not scheduler.running:
-        # Add scheduled job: 每天早上7点执行
         scheduler.add_job(
             scheduled_crawl_job,
             CronTrigger(hour=9, minute=10),
@@ -114,7 +81,6 @@ async def start_scheduler():
         utils.logger.info("[Scheduler] Eastmoney scheduler started")
         utils.logger.info("[Scheduler] Next scheduled run: Daily at 09:10")
 
-        # Run the scheduler
         try:
             while True:
                 await asyncio.sleep(1)
