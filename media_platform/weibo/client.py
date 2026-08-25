@@ -32,6 +32,7 @@ from urllib.parse import parse_qs, unquote, urlencode
 import httpx
 from httpx import Response
 from playwright.async_api import BrowserContext, Page
+from tools.httpx_util import make_async_client
 from tenacity import retry, stop_after_attempt, wait_fixed
 
 import config
@@ -61,6 +62,7 @@ class WeiboClient(ProxyRefreshMixin):
         self.timeout = timeout
         self.headers = headers
         self._host = "https://m.weibo.cn"
+        self.cookie_urls = [self._host]
         self.playwright_page = playwright_page
         self.cookie_dict = cookie_dict
         self._image_agent_host = "https://i1.wp.com/"
@@ -73,7 +75,7 @@ class WeiboClient(ProxyRefreshMixin):
         await self._refresh_proxy_if_expired()
 
         enable_return_response = kwargs.pop("return_response", False)
-        async with httpx.AsyncClient(proxy=self.proxy) as client:
+        async with make_async_client(proxy=self.proxy) as client:
             response = await client.request(method, url, timeout=self.timeout, **kwargs)
 
         if enable_return_response:
@@ -136,17 +138,16 @@ class WeiboClient(ProxyRefreshMixin):
         :param urls: Optional list of URLs to filter cookies (e.g., ["https://m.weibo.cn"])
                      If provided, only cookies for these URLs will be retrieved
         """
-        if urls:
-            cookies = await browser_context.cookies(urls=urls)
-            utils.logger.info(f"[WeiboClient.update_cookies] Updating cookies for specific URLs: {urls}")
-        else:
-            cookies = await browser_context.cookies()
-            utils.logger.info("[WeiboClient.update_cookies] Updating all cookies")
-
-        cookie_str, cookie_dict = utils.convert_cookies(cookies)
+        cookie_urls = urls or self.cookie_urls
+        cookie_str, cookie_dict = await utils.convert_browser_context_cookies(
+            browser_context,
+            urls=cookie_urls,
+        )
         self.headers["Cookie"] = cookie_str
         self.cookie_dict = cookie_dict
-        utils.logger.info(f"[WeiboClient.update_cookies] Cookie updated successfully, total: {len(cookie_dict)} cookies")
+        utils.logger.info(
+            f"[WeiboClient.update_cookies] Cookie updated successfully for {cookie_urls}, total: {len(cookie_dict)} cookies"
+        )
 
     async def get_note_by_keyword(
         self,
@@ -261,7 +262,7 @@ class WeiboClient(ProxyRefreshMixin):
         :return:
         """
         url = f"{self._host}/detail/{note_id}"
-        async with httpx.AsyncClient(proxy=self.proxy) as client:
+        async with make_async_client(proxy=self.proxy) as client:
             response = await client.request("GET", url, timeout=self.timeout, headers=self.headers)
             if response.status_code != 200:
                 raise DataFetchError(f"get weibo detail err: {response.text}")
@@ -291,7 +292,7 @@ class WeiboClient(ProxyRefreshMixin):
         # Since Weibo images are accessed through i1.wp.com, we need to concatenate the URL
         final_uri = (f"{self._image_agent_host}"
                      f"{image_url}")
-        async with httpx.AsyncClient(proxy=self.proxy) as client:
+        async with make_async_client(proxy=self.proxy) as client:
             try:
                 response = await client.request("GET", final_uri, timeout=self.timeout)
                 response.raise_for_status()

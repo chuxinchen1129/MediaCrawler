@@ -57,6 +57,7 @@ class ZhihuCrawler(AbstractCrawler):
 
     def __init__(self) -> None:
         self.index_url = "https://www.zhihu.com"
+        self.cookie_urls = [self.index_url]
         # self.user_agent = utils.get_user_agent()
         self.user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
         self._extractor = ZhihuExtractor()
@@ -114,7 +115,8 @@ class ZhihuCrawler(AbstractCrawler):
                 )
                 await login_obj.begin()
                 await self.zhihu_client.update_cookies(
-                    browser_context=self.browser_context
+                    browser_context=self.browser_context,
+                    urls=self.cookie_urls,
                 )
 
             # Zhihu's search API requires opening the search page first to access cookies, homepage alone won't work
@@ -125,7 +127,10 @@ class ZhihuCrawler(AbstractCrawler):
                 f"{self.index_url}/search?q=python&search_source=Guess&utm_content=search_hot&type=content"
             )
             await asyncio.sleep(5)
-            await self.zhihu_client.update_cookies(browser_context=self.browser_context)
+            await self.zhihu_client.update_cookies(
+                browser_context=self.browser_context,
+                urls=self.cookie_urls,
+            )
 
             crawler_type_var.set(config.CRAWLER_TYPE)
             if config.CRAWLER_TYPE == "search":
@@ -271,27 +276,26 @@ class ZhihuCrawler(AbstractCrawler):
             utils.logger.info(
                 f"[ZhihuCrawler.get_creators_and_notes] Creator info: {createor_info}"
             )
-            await zhihu_store.save_creator(creator=createor_info)
 
             # By default, only answer information is extracted, uncomment below if articles and videos are needed
 
             # Get all anwser information of the creator
             all_content_list = await self.zhihu_client.get_all_anwser_by_creator(
-                creator=createor_info,
+                url_token=user_url_token,
                 crawl_interval=config.CRAWLER_MAX_SLEEP_SEC,
                 callback=zhihu_store.batch_update_zhihu_contents,
             )
 
             # Get all articles of the creator's contents
             # all_content_list = await self.zhihu_client.get_all_articles_by_creator(
-            #     creator=createor_info,
+            #     url_token=user_url_token,
             #     crawl_interval=config.CRAWLER_MAX_SLEEP_SEC,
             #     callback=zhihu_store.batch_update_zhihu_contents
             # )
 
             # Get all videos of the creator's contents
             # all_content_list = await self.zhihu_client.get_all_videos_by_creator(
-            #     creator=createor_info,
+            #     url_token=user_url_token,
             #     crawl_interval=config.CRAWLER_MAX_SLEEP_SEC,
             #     callback=zhihu_store.batch_update_zhihu_contents
             # )
@@ -393,8 +397,9 @@ class ZhihuCrawler(AbstractCrawler):
         utils.logger.info(
             "[ZhihuCrawler.create_zhihu_client] Begin create zhihu API client ..."
         )
-        cookie_str, cookie_dict = utils.convert_cookies(
-            await self.browser_context.cookies()
+        cookie_str, cookie_dict = await utils.convert_browser_context_cookies(
+            self.browser_context,
+            urls=self.cookie_urls,
         )
         zhihu_client_obj = ZhiHuClient(
             proxy=httpx_proxy,

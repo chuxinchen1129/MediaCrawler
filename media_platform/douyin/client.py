@@ -29,6 +29,7 @@ from playwright.async_api import BrowserContext
 from base.base_crawler import AbstractApiClient
 from proxy.proxy_mixin import ProxyRefreshMixin
 from tools import utils
+from tools.httpx_util import make_async_client
 from var import request_keyword_var
 
 if TYPE_CHECKING:
@@ -55,6 +56,13 @@ class DouYinClient(AbstractApiClient, ProxyRefreshMixin):
         self.timeout = timeout
         self.headers = headers
         self._host = "https://www.douyin.com"
+        self.cookie_urls = [
+            "https://douyin.com",
+            self._host,
+            "https://creator.douyin.com",
+            "https://douhot.douyin.com",
+            "https://live.douyin.com",
+        ]
         self.playwright_page = playwright_page
         self.cookie_dict = cookie_dict
         # Initialize proxy pool (from ProxyRefreshMixin)
@@ -116,7 +124,7 @@ class DouYinClient(AbstractApiClient, ProxyRefreshMixin):
         # Check whether the proxy has expired before each request
         await self._refresh_proxy_if_expired()
 
-        async with httpx.AsyncClient(proxy=self.proxy) as client:
+        async with make_async_client(proxy=self.proxy) as client:
             response = await client.request(method, url, timeout=self.timeout, **kwargs)
         try:
             if response.text == "" or response.text == "blocked":
@@ -144,11 +152,17 @@ class DouYinClient(AbstractApiClient, ProxyRefreshMixin):
         if local_storage.get("HasUserLogin", "") == "1":
             return True
 
-        _, cookie_dict = utils.convert_cookies(await browser_context.cookies())
+        _, cookie_dict = await utils.convert_browser_context_cookies(
+            browser_context,
+            urls=self.cookie_urls,
+        )
         return cookie_dict.get("LOGIN_STATUS") == "1"
 
-    async def update_cookies(self, browser_context: BrowserContext):
-        cookie_str, cookie_dict = utils.convert_cookies(await browser_context.cookies())
+    async def update_cookies(self, browser_context: BrowserContext, urls: Optional[list[str]] = None):
+        cookie_str, cookie_dict = await utils.convert_browser_context_cookies(
+            browser_context,
+            urls=urls or self.cookie_urls,
+        )
         self.headers["Cookie"] = cookie_str
         self.cookie_dict = cookie_dict
 
@@ -312,8 +326,6 @@ class DouYinClient(AbstractApiClient, ProxyRefreshMixin):
             "max_cursor": max_cursor,
             "locate_query": "false",
             "publish_video_strategy_type": 2,
-            'verifyFp': 'verify_ma3hrt8n_q2q2HyYA_uLyO_4N6D_BLvX_E2LgoGmkA1BU',
-            'fp': 'verify_ma3hrt8n_q2q2HyYA_uLyO_4N6D_BLvX_E2LgoGmkA1BU'
         }
         return await self.get(uri, params)
 
@@ -333,7 +345,7 @@ class DouYinClient(AbstractApiClient, ProxyRefreshMixin):
         return result
 
     async def get_aweme_media(self, url: str) -> Union[bytes, None]:
-        async with httpx.AsyncClient(proxy=self.proxy) as client:
+        async with make_async_client(proxy=self.proxy) as client:
             try:
                 response = await client.request("GET", url, timeout=self.timeout, follow_redirects=True)
                 response.raise_for_status()
@@ -354,7 +366,7 @@ class DouYinClient(AbstractApiClient, ProxyRefreshMixin):
         Returns:
             重定向后的完整URL
         """
-        async with httpx.AsyncClient(proxy=self.proxy, follow_redirects=False) as client:
+        async with make_async_client(proxy=self.proxy, follow_redirects=False) as client:
             try:
                 utils.logger.info(f"[DouYinClient.resolve_short_url] Resolving short URL: {short_url}")
                 response = await client.get(short_url, timeout=10)

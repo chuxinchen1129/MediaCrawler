@@ -2,6 +2,24 @@
 
 <div align="center">
 
+### 🤝 特别感谢金牌赞助商
+
+<a href="https://www.browseract.ai/mediacrawler" target="_blank">
+  <img src="docs/static/images/browseract_ad.jpg" alt="BrowserAct" width="600">
+</a>
+
+<br>
+
+<a href="https://www.browseract.ai/mediacrawler" target="_blank">
+<small>BrowserAct 支持一句话从任意网站提取数据。无需代码，一次构建、稳定复用，Token 消耗极低。BrowserAct 使用真实浏览器自动构建数据采集 Bot，内置隐身浏览、验证码处理和住宅代理，直接输出结构化结果。立即免费试用。</small>
+</a>
+
+</div>
+
+---
+
+<div align="center">
+
 <a href="https://trendshift.io/repositories/8291" target="_blank">
   <img src="https://trendshift.io/api/badge/repositories/8291" alt="NanmiCoder%2FMediaCrawler | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/>
 </a>
@@ -74,6 +92,7 @@
 #### 🎁 额外功能
 - ✅ **自媒体视频下载器桌面端**（适合学习全栈开发）
 - ✅ **多平台首页信息流推荐**（HomeFeed）
+- ✅ **AI Agent Skill 支持**（[OpenClaw](https://openclaw.ai/) 🦞 / Claude Code / Cursor 一键安装，让 Agent 自动爬取数据）
 - [ ] **基于评论分析AI Agent正在开发中 🚀🚀**
 
 点击查看：[MediaCrawlerPro 项目主页](https://github.com/MediaCrawlerPro) 更多介绍
@@ -111,12 +130,28 @@ cd MediaCrawler
 uv sync
 ```
 
-### 🌐 浏览器驱动安装
+### 🌐 浏览器驱动安装（可选）
+
+> 如果使用默认的 CDP 模式（连接已有 Chrome 浏览器），**无需安装浏览器驱动**。仅在使用标准 Playwright 模式时需要安装。
 
 ```shell
-# 安装浏览器驱动
+# 仅在标准 Playwright 模式下需要安装浏览器驱动
 uv run playwright install
 ```
+
+### 🌍 Chrome 浏览器配置（推荐）
+
+项目默认使用 CDP 模式连接用户已有的 Chrome 浏览器，可以复用浏览器已有的登录状态、Cookie、扩展等，**大幅降低平台风控检测风险**。
+
+使用前需要：
+
+1. **安装最新版 Chrome 浏览器**（版本 >= 144），[下载地址](https://www.google.com/chrome/)
+2. **开启远程调试功能**：在 Chrome 地址栏输入 `chrome://inspect/#remote-debugging`，勾选 **"Allow remote debugging for this browser instance"**
+3. 页面显示 `Server running at: 127.0.0.1:9222` 表示已就绪
+
+> 💡 **提示**：运行爬虫后，Chrome 浏览器会弹出确认对话框，点击"接受"即可。程序会等待用户确认，60秒内操作完成即可。
+>
+> 如果不想使用 CDP 模式，可以在 `config/base_config.py` 中设置 `ENABLE_CDP_MODE = False` 切换为标准 Playwright 模式。
 
 ## 🚀 运行爬虫程序
 
@@ -140,17 +175,41 @@ uv run main.py --help
 
 MediaCrawler 提供了基于 Web 的可视化操作界面，无需命令行也能轻松使用爬虫功能。
 
-#### 启动 WebUI 服务
+#### 开发调试（推荐）
+
+开发时需要同时启动后端 API 服务和前端 Vite 开发服务器：
 
 ```shell
-# 启动 API 服务器（默认端口 8080）
+# 终端 1：启动 API 服务器（默认端口 8080）
 uv run uvicorn api.main:app --port 8080 --reload
 
-# 或者使用模块方式启动
-uv run python -m api.main
+# 终端 2：启动前端开发服务器
+cd webui
+npm install
+npm run dev        # 默认在 5173 端口启动，并代理 /api 到 8080
 ```
 
-启动成功后，访问 `http://localhost:8080` 即可打开 WebUI 界面。
+启动成功后，访问 `http://localhost:5173/` 即可打开 WebUI 界面。
+
+> 首次打开会进行环境检测（调用 `/api/env/check`），请确保后端服务已启动。如果检测失败，可点击「跳过检测」临时跳过。
+
+#### 构建生产资源
+
+如果希望通过 API 服务器直接提供 WebUI 静态资源，需要先构建前端：
+
+```shell
+cd webui
+npm install
+npm run build      # 产物输出到 api/webui/
+```
+
+构建完成后，只需启动 API 服务器：
+
+```shell
+uv run uvicorn api.main:app --port 8080 --reload
+```
+
+然后访问 `http://localhost:8080` 即可。
 
 #### WebUI 功能特性
 
@@ -222,7 +281,7 @@ python main.py --help
 
 ## 💾 数据保存
 
-MediaCrawler 支持多种数据存储方式，包括 CSV、JSON、Excel、SQLite 和 MySQL 数据库。
+MediaCrawler 支持多种数据存储方式，包括 CSV、JSON、JSONL、Excel、SQLite 和 MySQL 数据库。
 
 📖 **详细使用说明请查看：[数据存储指南](docs/data_storage_guide.md)**
 
@@ -237,22 +296,42 @@ MediaCrawler 支持多种数据存储方式，包括 CSV、JSON、Excel、SQLite
 
 ## 💰 赞助商展示
 
-<a href="https://tikhub.io/?utm_source=github.com/NanmiCoder/MediaCrawler&utm_medium=marketing_social&utm_campaign=retargeting&utm_content=carousel_ad">
-<img width="500" src="docs/static/images/tikhub_banner_zh.png">
-<br>
-TikHub.io 提供 900+ 高稳定性数据接口，覆盖 TK、DY、XHS、Y2B、Ins、X 等 14+ 海内外主流平台，支持用户、内容、商品、评论等多维度公开数据 API，并配套 4000 万+ 已清洗结构化数据集，使用邀请码 <code>cfzyejV9</code> 注册并充值，即可额外获得 $2 赠送额度。
-</a>
+<table>
+  <thead>
+    <tr>
+      <th width="220">赞助商</th>
+      <th align="left">介绍</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td align="center" valign="middle">
+        <a href="https://tikhub.io/?utm_source=github.com/NanmiCoder/MediaCrawler&utm_medium=marketing_social&utm_campaign=retargeting&utm_content=carousel_ad"><img src="docs/static/images/tikhub_banner_zh.png" width="180" alt="TikHub"></a>
+      </td>
+      <td valign="middle">
+        <a href="https://tikhub.io/?utm_source=github.com/NanmiCoder/MediaCrawler&utm_medium=marketing_social&utm_campaign=retargeting&utm_content=carousel_ad">TikHub.io</a> 提供 900+ 高稳定性数据接口，覆盖 TK、DY、XHS、Y2B、Ins、X 等 14+ 海内外主流平台，支持用户、内容、商品、评论等多维度公开数据 API，并配套 4000 万+ 已清洗结构化数据集，使用邀请码 <code>cfzyejV9</code> <a href="https://tikhub.io/?utm_source=github.com/NanmiCoder/MediaCrawler&utm_medium=marketing_social&utm_campaign=retargeting&utm_content=carousel_ad">注册并充值</a>，即可额外获得 $2 赠送额度。
+      </td>
+    </tr>
+    <tr>
+      <td align="center" valign="middle">
+        <a href="https://www.atlascloud.ai/?utm_source=github&utm_medium=link&utm_campaign=mei%27da%27c%27rmeidacrawler"><img width="160" alt="Atlas Cloud" src="docs/static/images/atlas_cloud_logo_black.png#gh-light-mode-only"><img width="160" alt="Atlas Cloud" src="docs/static/images/atlas_cloud_logo_white.png#gh-dark-mode-only"></a>
+      </td>
+      <td valign="middle">
+        <a href="https://www.atlascloud.ai/?utm_source=github&utm_medium=link&utm_campaign=mei%27da%27c%27rmeidacrawler">Atlas Cloud</a> 是一个全模态 AI 推理平台，让开发者通过统一的 AI API 访问视频生成、图像生成和 LLM API，无需分别维护多个厂商集成，即可调用 300+ 精选模型。Atlas Cloud 最新推出 <a href="https://www.atlascloud.ai/console/coding-plan">coding plan 优惠</a>，为开发者提供更具性价比的 API 访问预算。
+      </td>
+    </tr>
+    <tr>
+      <td align="center" valign="middle">
+        <a href="https://go.nodemaven.com/MediaCrawlergh"><img src="docs/static/images/nodemaven_banner.png" width="180" alt="NodeMaven"></a>
+      </td>
+      <td valign="middle">
+        <a href="https://go.nodemaven.com/MediaCrawlergh">NodeMaven</a> 是面向网页抓取和自动化场景的高效代理服务商，提供市面上最高质量的 IP。主要优势包括 99.9% 可用性、ZIP 邮编定位、IP 过滤（所有代理的欺诈评分均低于 97%）、无需 KYC，以及代理带宽检测器、Meta 标签检测器、IP 查询等独家免费工具。MediaCrawler 用户使用优惠码 <code>CRAWLER35</code> 可享移动和住宅代理 35% 折扣，使用 <code>CRAWLER40</code> 可享 ISP（静态）代理 40% 折扣。👉 <a href="https://go.nodemaven.com/MediaCrawlergh">访问 NodeMaven</a>
+      </td>
+    </tr>
+  </tbody>
+</table>
 
 ---
-
-<a href="https://www.thordata.com/?ls=github&lk=mediacrawler">
-<img width="500" src="docs/static/images/Thordata.png">
-<br>
-Thordata：可靠且经济高效的代理服务提供商。为企业和开发者提供稳定、高效且合规的全球代理 IP 服务。立即注册，赠送1GB住宅代理免费试用和2000次serp-api调用。
-</a>
-<br>
-<a href="https://www.thordata.com/products/residential-proxies/?ls=github&lk=mediacrawler">【住宅代理】</a> | <a href="https://www.thordata.com/products/web-scraper/?ls=github&lk=mediacrawler">【serp-api】</a>
-
 
 ## 🤝 成为赞助者
 
@@ -261,6 +340,31 @@ Thordata：可靠且经济高效的代理服务提供商。为企业和开发者
 **联系方式**：
 - 微信：`relakkes`
 - 邮箱：`relakkes@gmail.com`
+---
+
+## ☕ 请作者喝杯咖啡
+
+如果这个项目对您有帮助，欢迎打赏支持，您的每一份支持都是我持续更新的动力 ❤️
+
+<table>
+<tr>
+<td align="center" width="33%">
+<img src="docs/static/images/wechat_pay.jpeg" width="250" alt="微信赞赏"><br>
+<b>微信赞赏</b>
+</td>
+<td align="center" width="33%">
+<img src="docs/static/images/zfb_pay.png" width="250" alt="支付宝"><br>
+<b>支付宝</b>
+</td>
+<td align="center" width="33%">
+<a href="https://buymeacoffee.com/relakkes" target="_blank">
+<img src="docs/static/images/bmc_button.png" width="250" alt="Buy Me a Coffee">
+</a><br>
+<b>Buy Me a Coffee</b>
+</td>
+</tr>
+</table>
+
 ---
 
 ## 📚 其他
@@ -273,7 +377,7 @@ Thordata：可靠且经济高效的代理服务提供商。为企业和开发者
 
 如果这个项目对您有帮助，请给个 ⭐ Star 支持一下，让更多的人看到 MediaCrawler！
 
-[![Star History Chart](https://api.star-history.com/svg?repos=NanmiCoder/MediaCrawler&type=Date)](https://star-history.com/#NanmiCoder/MediaCrawler&Date)
+[![Star History Chart](https://www.repostars.dev/api/embed?repo=NanmiCoder%2FMediaCrawler&theme=ocean)](https://www.repostars.dev/?repos=NanmiCoder%2FMediaCrawler&theme=ocean)
 
 
 ## 📚 参考

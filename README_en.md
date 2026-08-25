@@ -2,6 +2,24 @@
 
 <div align="center">
 
+### 🤝 Special Thanks to Our Gold Sponsor
+
+<a href="https://www.browseract.ai/mediacrawler" target="_blank">
+  <img src="docs/static/images/browseract_ad.jpg" alt="BrowserAct" width="600">
+</a>
+
+<br>
+
+<a href="https://www.browseract.ai/mediacrawler" target="_blank">
+<small>BrowserAct lets you extract data from any website with a single sentence. No code required—build once, reuse reliably, and consume very few tokens. BrowserAct uses a real browser to automatically build data collection Bots, with built-in stealth browsing, CAPTCHA handling, and residential proxies, then outputs structured results directly. Try it free now.</small>
+</a>
+
+</div>
+
+---
+
+<div align="center">
+
 <a href="https://trendshift.io/repositories/8291" target="_blank">
   <img src="https://trendshift.io/api/badge/repositories/8291" alt="NanmiCoder%2FMediaCrawler | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/>
 </a>
@@ -139,14 +157,38 @@ uv run main.py --help
 
 MediaCrawler provides a web-based visual operation interface, allowing you to easily use crawler features without command line.
 
-#### Start WebUI Service
+#### Development (recommended)
+
+For development, you need to start both the backend API service and the frontend Vite dev server:
 
 ```shell
-# Start API server (default port 8080)
+# Terminal 1: start API server (default port 8080)
 uv run uvicorn api.main:app --port 8080 --reload
 
-# Or start using module method
-uv run python -m api.main
+# Terminal 2: start frontend dev server
+cd webui
+npm install
+npm run dev        # starts on port 5173 by default and proxies /api to 8080
+```
+
+After successful startup, visit `http://localhost:5173/` to open the WebUI interface.
+
+> On first launch, an environment check is performed (calls `/api/env/check`), so make sure the backend service is running. If the check fails, you can click "Skip Check" to bypass it temporarily.
+
+#### Build for Production
+
+If you want the API server to serve the WebUI static assets directly, build the frontend first:
+
+```shell
+cd webui
+npm install
+npm run build      # outputs to api/webui/
+```
+
+Then start only the API server:
+
+```shell
+uv run uvicorn api.main:app --port 8080 --reload
 ```
 
 After successful startup, visit `http://localhost:8080` to open the WebUI interface.
@@ -221,7 +263,7 @@ python main.py --help
 
 ## 💾 Data Storage
 
-MediaCrawler supports multiple data storage methods, including CSV, JSON, Excel, SQLite, and MySQL databases.
+MediaCrawler supports multiple data storage methods, including CSV, JSON, JSONL, Excel, SQLite, and MySQL databases.
 
 📖 **For detailed usage instructions, please see: [Data Storage Guide](docs/data_storage_guide.md)**
 
@@ -236,22 +278,42 @@ MediaCrawler supports multiple data storage methods, including CSV, JSON, Excel,
 
 ### 💰 Sponsor Display
 
-<a href="https://tikhub.io/?utm_source=github.com/NanmiCoder/MediaCrawler&utm_medium=marketing_social&utm_campaign=retargeting&utm_content=carousel_ad">
-<img width="500" src="docs/static/images/tikhub_banner_zh.png">
-<br>
-TikHub.io provides 900+ highly stable data interfaces, covering 14+ mainstream domestic and international platforms including TK, DY, XHS, Y2B, Ins, X, etc. Supports multi-dimensional public data APIs for users, content, products, comments, etc., with 40M+ cleaned structured datasets. Use invitation code <code>cfzyejV9</code> to register and recharge, and get an additional $2 bonus.
-</a>
+<table>
+  <thead>
+    <tr>
+      <th width="220">Sponsor</th>
+      <th align="left">Introduction</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td align="center" valign="middle">
+        <a href="https://tikhub.io/?utm_source=github.com/NanmiCoder/MediaCrawler&utm_medium=marketing_social&utm_campaign=retargeting&utm_content=carousel_ad"><img src="docs/static/images/tikhub_banner_zh.png" width="180" alt="TikHub"></a>
+      </td>
+      <td valign="middle">
+        <a href="https://tikhub.io/?utm_source=github.com/NanmiCoder/MediaCrawler&utm_medium=marketing_social&utm_campaign=retargeting&utm_content=carousel_ad">TikHub.io</a> provides 900+ highly stable data interfaces, covering 14+ mainstream domestic and international platforms including TK, DY, XHS, Y2B, Ins, X, etc. Supports multi-dimensional public data APIs for users, content, products, comments, etc., with 40M+ cleaned structured datasets. Use invitation code <code>cfzyejV9</code> to <a href="https://tikhub.io/?utm_source=github.com/NanmiCoder/MediaCrawler&utm_medium=marketing_social&utm_campaign=retargeting&utm_content=carousel_ad">register and recharge</a>, and get an additional $2 bonus.
+      </td>
+    </tr>
+    <tr>
+      <td align="center" valign="middle">
+        <a href="https://www.atlascloud.ai/?utm_source=github&utm_medium=link&utm_campaign=mei%27da%27c%27rmeidacrawler"><img width="160" alt="Atlas Cloud" src="docs/static/images/atlas_cloud_logo_black.png#gh-light-mode-only"><img width="160" alt="Atlas Cloud" src="docs/static/images/atlas_cloud_logo_white.png#gh-dark-mode-only"></a>
+      </td>
+      <td valign="middle">
+        <a href="https://www.atlascloud.ai/?utm_source=github&utm_medium=link&utm_campaign=mei%27da%27c%27rmeidacrawler">Atlas Cloud</a> is a full-modal AI inference platform that gives developers a single AI API to access video generation, image generation, and LLM APIs. Instead of managing multiple vendor integrations, you connect once and get unified access to 300+ curated models across all modalities. Check out Atlas Cloud's new <a href="https://www.atlascloud.ai/console/coding-plan">coding plan promotion</a> for more budget-friendly API access.
+      </td>
+    </tr>
+    <tr>
+      <td align="center" valign="middle">
+        <a href="https://go.nodemaven.com/MediaCrawlergh"><img src="docs/static/images/nodemaven_banner.png" width="180" alt="NodeMaven"></a>
+      </td>
+      <td valign="middle">
+        <a href="https://go.nodemaven.com/MediaCrawlergh">NodeMaven</a> is an efficient proxy provider for web scraping and automation, offering the highest-quality IPs on the market. Key benefits include 99.9% uptime, ZIP targeting, IP filtering across all proxies (fraud score below 97%), no KYC, and unique free tools such as Proxy Bandwidth Checker, Meta Tag Checker, IP Lookup, and more. MediaCrawler users get 35% off mobile and residential proxies with code <code>CRAWLER35</code>, and 40% off ISP (static) proxies with code <code>CRAWLER40</code>. 👉 <a href="https://go.nodemaven.com/MediaCrawlergh">Visit NodeMaven</a>
+      </td>
+    </tr>
+  </tbody>
+</table>
 
 ---
-
-<a href="https://www.thordata.com/?ls=github&lk=mediacrawler">
-<img width="500" src="docs/static/images/Thordata.png">
-<br>
-Thordata: Reliable and cost-effective proxy service provider. Provides stable, efficient and compliant global proxy IP services for enterprises and developers. Register now to get 1GB free residential proxy trial and 2000 serp-api calls.
-</a>
-<br>
-<a href="https://www.thordata.com/products/residential-proxies/?ls=github&lk=mediacrawler">【Residential Proxies】</a> | <a href="https://www.thordata.com/products/web-scraper/?ls=github&lk=mediacrawler">【serp-api】</a>
-
 
 ### 🤝 Become a Sponsor
 
@@ -272,7 +334,7 @@ Become a sponsor and showcase your product here, getting massive exposure daily!
 
 If this project helps you, please give a ⭐ Star to support and let more people see MediaCrawler!
 
-[![Star History Chart](https://api.star-history.com/svg?repos=NanmiCoder/MediaCrawler&type=Date)](https://star-history.com/#NanmiCoder/MediaCrawler&Date)
+[![Star History Chart](https://www.repostars.dev/api/embed?repo=NanmiCoder%2FMediaCrawler&theme=ocean)](https://www.repostars.dev/?repos=NanmiCoder%2FMediaCrawler&theme=ocean)
 
 
 ## 📚 References

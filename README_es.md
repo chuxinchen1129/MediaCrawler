@@ -2,6 +2,24 @@
 
 <div align="center">
 
+### 🤝 Agradecimientos Especiales a Nuestro Patrocinador Oro
+
+<a href="https://www.browseract.ai/mediacrawler" target="_blank">
+  <img src="docs/static/images/browseract_ad.jpg" alt="BrowserAct" width="600">
+</a>
+
+<br>
+
+<a href="https://www.browseract.ai/mediacrawler" target="_blank">
+<small>BrowserAct permite extraer datos de cualquier sitio web con una sola frase. Sin código: créalo una vez, reutilízalo de forma estable y consume muy pocos tokens. BrowserAct utiliza un navegador real para crear automáticamente Bots de recolección de datos, con navegación sigilosa, gestión de CAPTCHA y proxies residenciales integrados, y entrega directamente resultados estructurados. Pruébalo gratis ahora.</small>
+</a>
+
+</div>
+
+---
+
+<div align="center">
+
 <a href="https://trendshift.io/repositories/8291" target="_blank">
   <img src="https://trendshift.io/api/badge/repositories/8291" alt="NanmiCoder%2FMediaCrawler | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/>
 </a>
@@ -139,14 +157,38 @@ uv run main.py --help
 
 MediaCrawler proporciona una interfaz de operación visual basada en web, permitiéndole usar fácilmente las funciones del rastreador sin línea de comandos.
 
-#### Iniciar Servicio WebUI
+#### Desarrollo (recomendado)
+
+Para el desarrollo, debe iniciar tanto el servicio API backend como el servidor de desarrollo Vite frontend:
 
 ```shell
-# Iniciar servidor API (puerto predeterminado 8080)
+# Terminal 1: iniciar servidor API (puerto predeterminado 8080)
 uv run uvicorn api.main:app --port 8080 --reload
 
-# O iniciar usando método de módulo
-uv run python -m api.main
+# Terminal 2: iniciar servidor de desarrollo frontend
+cd webui
+npm install
+npm run dev        # se inicia en el puerto 5173 por defecto y redirige /api a 8080
+```
+
+Después de iniciar exitosamente, visite `http://localhost:5173/` para abrir la interfaz WebUI.
+
+> En el primer inicio, se realiza una verificación de entorno (llama a `/api/env/check`), así que asegúrese de que el servicio backend esté en ejecución. Si la verificación falla, puede hacer clic en "Omitir verificación" para omitirla temporalmente.
+
+#### Construir para Producción
+
+Si desea que el servidor API sirva directamente los recursos estáticos de WebUI, construya el frontend primero:
+
+```shell
+cd webui
+npm install
+npm run build      # salida en api/webui/
+```
+
+Luego inicie solo el servidor API:
+
+```shell
+uv run uvicorn api.main:app --port 8080 --reload
 ```
 
 Después de iniciar exitosamente, visite `http://localhost:8080` para abrir la interfaz WebUI.
@@ -221,7 +263,7 @@ python main.py --help
 
 ## 💾 Almacenamiento de Datos
 
-MediaCrawler soporta múltiples métodos de almacenamiento de datos, incluyendo CSV, JSON, Excel, SQLite y bases de datos MySQL.
+MediaCrawler soporta múltiples métodos de almacenamiento de datos, incluyendo CSV, JSON, JSONL, Excel, SQLite y bases de datos MySQL.
 
 📖 **Para instrucciones de uso detalladas, por favor vea: [Guía de Almacenamiento de Datos](docs/data_storage_guide.md)**
 
@@ -236,22 +278,34 @@ MediaCrawler soporta múltiples métodos de almacenamiento de datos, incluyendo 
 
 ### 💰 Exhibición de Patrocinadores
 
-<a href="https://tikhub.io/?utm_source=github.com/NanmiCoder/MediaCrawler&utm_medium=marketing_social&utm_campaign=retargeting&utm_content=carousel_ad">
-<img width="500" src="docs/static/images/tikhub_banner_zh.png">
-<br>
-TikHub.io proporciona 900+ interfaces de datos altamente estables, cubriendo 14+ plataformas principales nacionales e internacionales incluyendo TK, DY, XHS, Y2B, Ins, X, etc. Soporta APIs de datos públicos multidimensionales para usuarios, contenido, productos, comentarios, etc., con 40M+ conjuntos de datos estructurados limpios. Use el código de invitación <code>cfzyejV9</code> para registrarse y recargar, y obtenga $2 adicionales de bonificación.
-</a>
+<table>
+  <thead>
+    <tr>
+      <th width="220">Patrocinador</th>
+      <th align="left">Introducción</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td align="center" valign="middle">
+        <a href="https://tikhub.io/?utm_source=github.com/NanmiCoder/MediaCrawler&utm_medium=marketing_social&utm_campaign=retargeting&utm_content=carousel_ad"><img src="docs/static/images/tikhub_banner_zh.png" width="180" alt="TikHub"></a>
+      </td>
+      <td valign="middle">
+        <a href="https://tikhub.io/?utm_source=github.com/NanmiCoder/MediaCrawler&utm_medium=marketing_social&utm_campaign=retargeting&utm_content=carousel_ad">TikHub.io</a> proporciona 900+ interfaces de datos altamente estables, cubriendo 14+ plataformas principales nacionales e internacionales incluyendo TK, DY, XHS, Y2B, Ins, X, etc. Soporta APIs de datos públicos multidimensionales para usuarios, contenido, productos, comentarios, etc., con 40M+ conjuntos de datos estructurados limpios. Use el código de invitación <code>cfzyejV9</code> para <a href="https://tikhub.io/?utm_source=github.com/NanmiCoder/MediaCrawler&utm_medium=marketing_social&utm_campaign=retargeting&utm_content=carousel_ad">registrarse y recargar</a>, y obtenga $2 adicionales de bonificación.
+      </td>
+    </tr>
+    <tr>
+      <td align="center" valign="middle">
+        <a href="https://go.nodemaven.com/MediaCrawlergh"><img src="docs/static/images/nodemaven_banner.png" width="180" alt="NodeMaven"></a>
+      </td>
+      <td valign="middle">
+        <a href="https://go.nodemaven.com/MediaCrawlergh">NodeMaven</a> es un proveedor eficiente de proxies para web scraping y automatización, con las IP de mayor calidad del mercado. Sus principales ventajas incluyen una disponibilidad del 99,9%, segmentación por código postal, filtrado de IP en todos los proxies (puntuación de fraude inferior al 97%), sin KYC y herramientas gratuitas exclusivas como Proxy Bandwidth Checker, Meta Tag Checker, IP Lookup y más. Los usuarios de MediaCrawler obtienen un 35% de descuento en proxies móviles y residenciales con el código <code>CRAWLER35</code>, y un 40% de descuento en proxies ISP (estáticos) con el código <code>CRAWLER40</code>. 👉 <a href="https://go.nodemaven.com/MediaCrawlergh">Visita NodeMaven</a>
+      </td>
+    </tr>
+  </tbody>
+</table>
 
 ---
-
-<a href="https://www.thordata.com/?ls=github&lk=mediacrawler">
-<img width="500" src="docs/static/images/Thordata.png">
-<br>
-Thordata: Proveedor de servicios de proxy confiable y rentable. Proporciona servicios de IP proxy global estables, eficientes y conformes para empresas y desarrolladores. Regístrese ahora para obtener 1GB de prueba gratuita de proxy residencial y 2000 llamadas serp-api.
-</a>
-<br>
-<a href="https://www.thordata.com/products/residential-proxies/?ls=github&lk=mediacrawler">【Proxies Residenciales】</a> | <a href="https://www.thordata.com/products/web-scraper/?ls=github&lk=mediacrawler">【serp-api】</a>
-
 
 ### 🤝 Conviértase en Patrocinador
 
@@ -272,7 +326,7 @@ Thordata: Proveedor de servicios de proxy confiable y rentable. Proporciona serv
 
 ¡Si este proyecto te ayuda, por favor da una ⭐ Estrella para apoyar y que más personas vean MediaCrawler!
 
-[![Star History Chart](https://api.star-history.com/svg?repos=NanmiCoder/MediaCrawler&type=Date)](https://star-history.com/#NanmiCoder/MediaCrawler&Date)
+[![Star History Chart](https://www.repostars.dev/api/embed?repo=NanmiCoder%2FMediaCrawler&theme=ocean)](https://www.repostars.dev/?repos=NanmiCoder%2FMediaCrawler&theme=ocean)
 
 
 ## 📚 Referencias

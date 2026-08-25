@@ -62,6 +62,7 @@ class BilibiliCrawler(AbstractCrawler):
 
     def __init__(self):
         self.index_url = "https://www.bilibili.com"
+        self.cookie_urls = [self.index_url]
         self.user_agent = utils.get_user_agent()
         self.cdp_manager = None
         self.ip_proxy_pool = None  # Proxy IP pool for automatic proxy refresh
@@ -105,7 +106,10 @@ class BilibiliCrawler(AbstractCrawler):
                     cookie_str=config.COOKIES,
                 )
                 await login_obj.begin()
-                await self.bili_client.update_cookies(browser_context=self.browser_context)
+                await self.bili_client.update_cookies(
+                    browser_context=self.browser_context,
+                    urls=self.cookie_urls,
+                )
 
             crawler_type_var.set(config.CRAWLER_TYPE)
             if config.CRAWLER_TYPE == "search":
@@ -462,7 +466,10 @@ class BilibiliCrawler(AbstractCrawler):
         :return: bilibili client
         """
         utils.logger.info("[BilibiliCrawler.create_bilibili_client] Begin create bilibili API client ...")
-        cookie_str, cookie_dict = utils.convert_cookies(await self.browser_context.cookies())
+        cookie_str, cookie_dict = await utils.convert_browser_context_cookies(
+            self.browser_context,
+            urls=self.cookie_urls,
+        )
         bilibili_client_obj = BilibiliClient(
             proxy=httpx_proxy,
             headers={
@@ -639,14 +646,14 @@ class BilibiliCrawler(AbstractCrawler):
         """
         async with semaphore:
             creator_unhandled_info: Dict = await self.bili_client.get_creator_info(creator_id)
+            # 教学版：仅保留动态所需的最少字段(内存临时用)，不持久化创作者个人资料。
             creator_info: Dict = {
                 "id": creator_id,
                 "name": creator_unhandled_info.get("name"),
-                "sign": creator_unhandled_info.get("sign"),
-                "avatar": creator_unhandled_info.get("face"),
             }
-        await self.get_fans(creator_info, semaphore)
-        await self.get_followings(creator_info, semaphore)
+        # 教学版：不再爬取粉丝/关注列表(其他用户的个人信息)，防骚扰。
+        # await self.get_fans(creator_info, semaphore)
+        # await self.get_followings(creator_info, semaphore)
         await self.get_dynamics(creator_info, semaphore)
 
     async def get_fans(self, creator_info: Dict, semaphore: asyncio.Semaphore):

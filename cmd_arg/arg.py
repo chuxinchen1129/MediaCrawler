@@ -22,6 +22,7 @@ from __future__ import annotations
 
 
 import sys
+import re
 from enum import Enum
 from types import SimpleNamespace
 from typing import Iterable, Optional, Sequence, Type, TypeVar
@@ -70,6 +71,7 @@ class SaveDataOptionEnum(str, Enum):
     CSV = "csv"
     DB = "db"
     JSON = "json"
+    JSONL = "jsonl"
     SQLITE = "sqlite"
     MONGODB = "mongodb"
     EXCEL = "excel"
@@ -132,6 +134,21 @@ def _inject_init_db_default(args: Sequence[str]) -> list[str]:
         i += 1
 
     return normalized
+
+
+def _normalize_tieba_note_id(value: str) -> str:
+    """Accept a raw Tieba thread id or a /p/<id> URL."""
+    value = value.strip()
+    match = re.search(r"/p/(\d+)", value)
+    return match.group(1) if match else value
+
+
+def _normalize_tieba_creator_url(value: str) -> str:
+    """Accept a Tieba creator homepage URL or a portrait id."""
+    value = value.strip()
+    if value.startswith("http://") or value.startswith("https://"):
+        return value
+    return f"https://tieba.baidu.com/home/main?id={value}"
 
 
 async def parse_cmd(argv: Optional[Sequence[str]] = None):
@@ -212,11 +229,11 @@ async def parse_cmd(argv: Optional[Sequence[str]] = None):
             SaveDataOptionEnum,
             typer.Option(
                 "--save_data_option",
-                help="Data save option (csv=CSV file | db=MySQL database | json=JSON file | sqlite=SQLite database | mongodb=MongoDB database | excel=Excel file | postgres=PostgreSQL database)",
+                help="Data save option (csv=CSV file | db=MySQL database | json=JSON file | jsonl=JSONL file | sqlite=SQLite database | mongodb=MongoDB database | excel=Excel file | postgres=PostgreSQL database)",
                 rich_help_panel="Storage Configuration",
             ),
         ] = _coerce_enum(
-            SaveDataOptionEnum, config.SAVE_DATA_OPTION, SaveDataOptionEnum.JSON
+            SaveDataOptionEnum, config.SAVE_DATA_OPTION, SaveDataOptionEnum.JSONL
         ),
         init_db: Annotated[
             Optional[InitDbOptionEnum],
@@ -258,6 +275,14 @@ async def parse_cmd(argv: Optional[Sequence[str]] = None):
                 rich_help_panel="Comment Configuration",
             ),
         ] = config.CRAWLER_MAX_COMMENTS_COUNT_SINGLENOTES,
+        crawler_max_notes_count: Annotated[
+            int,
+            typer.Option(
+                "--crawler_max_notes_count",
+                help="Maximum number of videos/posts to crawl",
+                rich_help_panel="Basic Configuration",
+            ),
+        ] = config.CRAWLER_MAX_NOTES_COUNT,
         max_concurrency_num: Annotated[
             int,
             typer.Option(
@@ -295,10 +320,18 @@ async def parse_cmd(argv: Optional[Sequence[str]] = None):
             str,
             typer.Option(
                 "--ip_proxy_provider_name",
-                help="IP proxy provider name (kuaidaili | wandouhttp)",
+                help="IP proxy provider name (kuaidaili | wandouhttp | static)",
                 rich_help_panel="Proxy Configuration",
             ),
         ] = config.IP_PROXY_PROVIDER_NAME,
+        static_proxy_url: Annotated[
+            str,
+            typer.Option(
+                "--static_proxy_url",
+                help="Static proxy URL, for example http://user:password@host:port",
+                rich_help_panel="Proxy Configuration",
+            ),
+        ] = config.STATIC_PROXY_URL,
     ) -> SimpleNamespace:
         """MediaCrawler 命令行入口"""
 
@@ -325,11 +358,13 @@ async def parse_cmd(argv: Optional[Sequence[str]] = None):
         config.SAVE_DATA_OPTION = save_data_option.value
         config.COOKIES = cookies
         config.CRAWLER_MAX_COMMENTS_COUNT_SINGLENOTES = max_comments_count_singlenotes
+        config.CRAWLER_MAX_NOTES_COUNT = crawler_max_notes_count
         config.MAX_CONCURRENCY_NUM = max_concurrency_num
         config.SAVE_DATA_PATH = save_data_path
         config.ENABLE_IP_PROXY = enable_ip_proxy_value
         config.IP_PROXY_POOL_COUNT = ip_proxy_pool_count
         config.IP_PROXY_PROVIDER_NAME = ip_proxy_provider_name
+        config.STATIC_PROXY_URL = static_proxy_url
 
         # Set platform-specific ID lists for detail/creator mode
         if specified_id_list:
@@ -343,6 +378,12 @@ async def parse_cmd(argv: Optional[Sequence[str]] = None):
                 config.WEIBO_SPECIFIED_ID_LIST = specified_id_list
             elif platform == PlatformEnum.KUAISHOU:
                 config.KS_SPECIFIED_ID_LIST = specified_id_list
+            elif platform == PlatformEnum.TIEBA:
+                config.TIEBA_SPECIFIED_ID_LIST = [
+                    _normalize_tieba_note_id(item) for item in specified_id_list
+                ]
+            elif platform == PlatformEnum.ZHIHU:
+                config.ZHIHU_SPECIFIED_ID_LIST = specified_id_list
 
         if creator_id_list:
             if platform == PlatformEnum.XHS:
@@ -355,6 +396,10 @@ async def parse_cmd(argv: Optional[Sequence[str]] = None):
                 config.WEIBO_CREATOR_ID_LIST = creator_id_list
             elif platform == PlatformEnum.KUAISHOU:
                 config.KS_CREATOR_ID_LIST = creator_id_list
+            elif platform == PlatformEnum.TIEBA:
+                config.TIEBA_CREATOR_URL_LIST = [
+                    _normalize_tieba_creator_url(item) for item in creator_id_list
+                ]
 
         return SimpleNamespace(
             platform=config.PLATFORM,

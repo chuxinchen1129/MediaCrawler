@@ -42,7 +42,12 @@ from tools.cdp_browser import CDPBrowserManager
 from var import crawler_type_var, source_keyword_var
 
 from .client import XiaoHongShuClient
-from .exception import DataFetchError, NoteNotFoundError
+from .exception import (
+    DataFetchError,
+    IPBlockError,
+    NoteNotFoundError,
+    PlatformAccessError,
+)
 from .field import SearchSortType
 from .help import parse_note_info_from_note_url, parse_creator_info_from_url, get_search_id
 from .login import XiaoHongShuLogin
@@ -55,7 +60,8 @@ class XiaoHongShuCrawler(AbstractCrawler):
     cdp_manager: Optional[CDPBrowserManager]
 
     def __init__(self) -> None:
-        self.index_url = "https://www.xiaohongshu.com"
+        self.index_url = "https://www.rednote.com" if config.XHS_INTERNATIONAL else "https://www.xiaohongshu.com"
+        self.cookie_urls = [self.index_url]
         # self.user_agent = utils.get_user_agent()
         self.user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
         self.cdp_manager = None
@@ -105,7 +111,10 @@ class XiaoHongShuCrawler(AbstractCrawler):
                     cookie_str=config.COOKIES,
                 )
                 await login_obj.begin()
-                await self.xhs_client.update_cookies(browser_context=self.browser_context)
+                await self.xhs_client.update_cookies(
+                    browser_context=self.browser_context,
+                    urls=self.cookie_urls,
+                )
 
             crawler_type_var.set(config.CRAWLER_TYPE)
             if config.CRAWLER_TYPE == "search":
@@ -201,6 +210,13 @@ class XiaoHongShuCrawler(AbstractCrawler):
                     await xhs_store.save_creator(user_id, creator=createor_info)
             except ValueError as e:
                 utils.logger.error(f"[XiaoHongShuCrawler.get_creators_and_notes] Failed to parse creator URL: {e}")
+                continue
+            except (IPBlockError, PlatformAccessError) as e:
+                # Access restricted on the creator homepage, skip this creator instead of crashing the run.
+                utils.logger.error(
+                    f"[XiaoHongShuCrawler.get_creators_and_notes] Access restricted for creator {creator_url}: {e}. "
+                    f"建议降低采集频率、更换 IP 或检查账号状态"
+                )
                 continue
 
             # Use fixed crawling interval
@@ -298,7 +314,8 @@ class XiaoHongShuCrawler(AbstractCrawler):
                     note_detail = await self.xhs_client.get_note_by_id_from_html(note_id, xsec_source, xsec_token,
                                                                                  enable_cookie=True)
                     if not note_detail:
-                        raise Exception(f"[get_note_detail_async_task] Failed to get note detail, Id: {note_id}")
+                        utils.logger.warning(f"[skip] Failed to get note detail, Id: {note_id}, 跳过继续")
+                        return None
 
                 note_detail.update({"xsec_token": xsec_token, "xsec_source": xsec_source})
 
@@ -310,6 +327,14 @@ class XiaoHongShuCrawler(AbstractCrawler):
 
             except NoteNotFoundError as ex:
                 utils.logger.warning(f"[XiaoHongShuCrawler.get_note_detail_async_task] Note not found: {note_id}, {ex}")
+                return None
+            except (IPBlockError, PlatformAccessError) as ex:
+                # Access restricted (IP block / rate limit / account security).
+                # Skip this note instead of aborting the whole asyncio.gather batch.
+                utils.logger.error(
+                    f"[XiaoHongShuCrawler.get_note_detail_async_task] Access restricted while getting note {note_id}: {ex}. "
+                    f"建议降低采集频率、更换 IP 或检查账号状态"
+                )
                 return None
             except DataFetchError as ex:
                 utils.logger.error(f"[XiaoHongShuCrawler.get_note_detail_async_task] Get note detail error: {ex}")
@@ -356,7 +381,10 @@ class XiaoHongShuCrawler(AbstractCrawler):
     async def create_xhs_client(self, httpx_proxy: Optional[str]) -> XiaoHongShuClient:
         """Create Xiaohongshu client"""
         utils.logger.info("[XiaoHongShuCrawler.create_xhs_client] Begin create Xiaohongshu API client ...")
-        cookie_str, cookie_dict = utils.convert_cookies(await self.browser_context.cookies())
+        cookie_str, cookie_dict = await utils.convert_browser_context_cookies(
+            self.browser_context,
+            urls=self.cookie_urls,
+        )
         xhs_client_obj = XiaoHongShuClient(
             proxy=httpx_proxy,
             headers={
@@ -364,10 +392,10 @@ class XiaoHongShuCrawler(AbstractCrawler):
                 "accept-language": "zh-CN,zh;q=0.9",
                 "cache-control": "no-cache",
                 "content-type": "application/json;charset=UTF-8",
-                "origin": "https://www.xiaohongshu.com",
+                "origin": self.index_url,
                 "pragma": "no-cache",
                 "priority": "u=1, i",
-                "referer": "https://www.xiaohongshu.com/",
+                "referer": f"{self.index_url}/",
                 "sec-ch-ua": '"Chromium";v="136", "Google Chrome";v="136", "Not.A/Brand";v="99"',
                 "sec-ch-ua-mobile": "?0",
                 "sec-ch-ua-platform": '"Windows"',

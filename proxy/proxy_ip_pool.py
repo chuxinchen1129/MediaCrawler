@@ -22,10 +22,13 @@
 # @Time    : 2023/12/2 13:45
 # @Desc    : IP proxy pool implementation
 import random
+import time
 from typing import Dict, List
+from urllib.parse import unquote, urlparse
 
 import httpx
 from tenacity import retry, stop_after_attempt, wait_fixed
+from tools.httpx_util import make_async_client
 
 import config
 from proxy.providers import (
@@ -81,7 +84,7 @@ class ProxyIpPool:
             else:
                 proxy_url = f"http://{proxy.ip}:{proxy.port}"
 
-            async with httpx.AsyncClient(proxy=proxy_url) as client:
+            async with make_async_client(proxy=proxy_url) as client:
                 response = await client.get(self.valid_ip_url)
             if response.status_code == 200:
                 return True
@@ -149,9 +152,46 @@ class ProxyIpPool:
         await self.load_proxies()
 
 
+class StaticProxyProvider(ProxyProvider):
+    async def get_proxy(self, num: int) -> List[IpInfoModel]:
+        proxy_url = getattr(config, "STATIC_PROXY_URL", "")
+        if not proxy_url:
+            utils.logger.warning("[StaticProxyProvider] STATIC_PROXY_URL is not configured!")
+            return []
+
+        try:
+            parsed = urlparse(proxy_url)
+            scheme = parsed.scheme or "http"
+            if scheme not in {"http", "https"}:
+                utils.logger.error(f"[StaticProxyProvider] Unsupported proxy scheme: {scheme}")
+                return []
+
+            ip = parsed.hostname or ""
+            port = parsed.port or (443 if scheme == "https" else 80)
+            if not ip:
+                utils.logger.error("[StaticProxyProvider] STATIC_PROXY_URL host is empty!")
+                return []
+
+            return [
+                IpInfoModel(
+                    ip=ip,
+                    port=port,
+                    user=unquote(parsed.username or ""),
+                    password=unquote(parsed.password or ""),
+                    protocol=f"{scheme}://",
+                    # Static proxy doesn't expire.
+                    expired_time_ts=int(time.time()) + 99999999,
+                )
+            ]
+        except Exception as e:
+            utils.logger.error(f"[StaticProxyProvider] Parse static proxy url error: {e}")
+            return []
+
+
 IpProxyProvider: Dict[str, ProxyProvider] = {
     ProviderNameEnum.KUAI_DAILI_PROVIDER.value: new_kuai_daili_proxy(),
     ProviderNameEnum.WANDOU_HTTP_PROVIDER.value: new_wandou_http_proxy(),
+    ProviderNameEnum.STATIC_PROVIDER.value: StaticProxyProvider(),
 }
 
 
@@ -162,10 +202,17 @@ async def create_ip_pool(ip_pool_count: int, enable_validate_ip: bool) -> ProxyI
     :param enable_validate_ip: Whether to enable IP proxy validation
     :return:
     """
+    ip_provider = IpProxyProvider.get(config.IP_PROXY_PROVIDER_NAME)
+    if ip_provider is None:
+        raise ValueError(
+            f"Unknown proxy provider: '{config.IP_PROXY_PROVIDER_NAME}'. "
+            f"Valid options: {list(IpProxyProvider.keys())}"
+        )
+    is_static = config.IP_PROXY_PROVIDER_NAME == ProviderNameEnum.STATIC_PROVIDER.value
     pool = ProxyIpPool(
         ip_pool_count=ip_pool_count,
-        enable_validate_ip=enable_validate_ip,
-        ip_provider=IpProxyProvider.get(config.IP_PROXY_PROVIDER_NAME),
+        enable_validate_ip=False if is_static else enable_validate_ip,
+        ip_provider=ip_provider,
     )
     await pool.load_proxies()
     return pool
